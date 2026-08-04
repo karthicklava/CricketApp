@@ -1,0 +1,12 @@
+{
+  "name": "cricket-scoring-engine",
+  "version": "1.0.0",
+  "description": "TypeScript / Node reference runner for cricket scoring calculation engine rules validation.",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": ["cricket", "scoring", "offline-first", "engine"],
+  "author": "Antigravity",
+  "license": "ISC"
+}

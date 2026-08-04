@@ -1,0 +1,1131 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cricket_scoring_engine/cricket_scoring_engine.dart';
+import 'core/theme.dart';
+import 'core/navigation/match_destination.dart';
+import 'core/services/launcher_icon_service.dart';
+import 'data/local/database.dart';
+import 'data/repositories/team_repository.dart';
+import 'data/repositories/match_repository.dart';
+import 'data/repositories/completed_scorecard_repository.dart';
+import 'presentation/home/home_dashboard_state.dart';
+import 'presentation/home/home_dashboard_notifier.dart';
+import 'presentation/scoring/scoring_screen.dart';
+import 'presentation/scorecard/scorecard_screen.dart';
+import 'presentation/teams/create_team_screen.dart';
+import 'presentation/teams/teams_list_screen.dart';
+import 'presentation/teams/team_details_screen.dart';
+import 'presentation/teams/add_players_screen.dart';
+import 'presentation/matches/match_setup_wizard.dart';
+import 'presentation/demo/demo_scoring_screen.dart';
+import 'presentation/matches/completed_match_details_screen.dart';
+import 'presentation/matches/pdf_preview_screen.dart';
+import 'presentation/matches/live_match_recovery_screen.dart';
+import 'presentation/profile/personalization_screen.dart';
+import 'presentation/profile/profile_screen.dart';
+import 'presentation/profile/launcher_icon_screen.dart';
+import 'presentation/profile/profile_notifier.dart';
+import 'presentation/common/widgets/cricket_badge_widget.dart';
+import 'presentation/common/widgets/brand_logo.dart';
+import 'presentation/common/widgets/live_match_header.dart';
+import 'presentation/common/widgets/sports_ui.dart';
+
+// Global Providers
+final databaseProvider = Provider((ref) => AppDatabase());
+final sharedPrefsProvider =
+    Provider<SharedPreferences>((ref) => throw UnimplementedError());
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        sharedPrefsProvider.overrideWithValue(prefs),
+      ],
+      child: const CricketApp(),
+    ),
+  );
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    LauncherIconService(prefs).normalizePersistedState();
+  });
+}
+
+class CricketApp extends ConsumerWidget {
+  const CricketApp({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return MaterialApp.router(
+      title: 'Cricket Scorer',
+      theme: AppTheme.lightTheme,
+      routerConfig: _router(ref),
+      debugShowCheckedModeBanner: false,
+    );
+  }
+}
+
+// Navigation Key setup
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final _shellNavigatorKey = GlobalKey<NavigatorState>();
+
+GoRouter _router(WidgetRef ref) => GoRouter(
+      navigatorKey: _rootNavigatorKey,
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/welcome',
+          builder: (context, state) => const WelcomeScreen(),
+        ),
+        GoRoute(
+          path: '/demo-scoring',
+          parentNavigatorKey: _rootNavigatorKey,
+          builder: (context, state) => const DemoScoringScreen(),
+        ),
+        ShellRoute(
+          navigatorKey: _shellNavigatorKey,
+          builder: (context, state, child) => MainScaffold(child: child),
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (context, state) => const HomeScreen(),
+            ),
+            GoRoute(
+              path: '/matches',
+              builder: (context, state) => const MatchesScreen(),
+            ),
+            GoRoute(
+              path: '/score',
+              builder: (context, state) => const ScoreTabScreen(),
+            ),
+            GoRoute(
+              path: '/teams',
+              builder: (context, state) => const TeamsListScreen(),
+            ),
+            GoRoute(
+              path: '/profile',
+              builder: (context, state) => const ProfileScreen(),
+            ),
+          ],
+        ),
+        GoRoute(
+          path: '/teams/create',
+          parentNavigatorKey: _rootNavigatorKey,
+          builder: (context, state) {
+            final id = state.uri.queryParameters['id'];
+            return CreateTeamScreen(initialTeamId: id);
+          },
+        ),
+        GoRoute(
+          path: '/teams/details',
+          parentNavigatorKey: _rootNavigatorKey,
+          builder: (context, state) =>
+              TeamDetailsScreen(team: state.extra as TeamsTableData),
+        ),
+        GoRoute(
+          path: '/teams/add-players/:teamId',
+          parentNavigatorKey: _rootNavigatorKey,
+          builder: (context, state) => AddPlayersScreen(
+            teamId: state.pathParameters['teamId']!,
+            returnToMatchSetup:
+                state.uri.queryParameters['returnToMatchSetup'] == 'true',
+          ),
+        ),
+        GoRoute(
+          path: '/matches/create',
+          parentNavigatorKey: _rootNavigatorKey,
+          builder: (context, state) {
+            final preselectId = state.uri.queryParameters['preselectTeamId'];
+            final draftId = state.uri.queryParameters['draftId'];
+            return MatchSetupWizard(
+              preselectTeamId: preselectId,
+              draftId: draftId,
+            );
+          },
+        ),
+        GoRoute(
+          path: '/matches/:matchId/scoring',
+          parentNavigatorKey: _rootNavigatorKey,
+          builder: (context, state) {
+            final matchId = state.pathParameters['matchId']!;
+            final matchState = state.extra as MatchState?;
+            if (matchState != null) {
+              final validation =
+                  MatchDestinationResolver.validateLiveState(matchState);
+              if (validation != null) {
+                return LiveMatchRecoveryScreen(
+                    matchId: matchId, reason: validation);
+              }
+              return LiveScoringScreen(
+                  initialMatchState: matchState, deviceId: 'device_123');
+            }
+            return FutureBuilder<MatchState?>(
+              future: ref.read(matchRepositoryProvider).getMatchState(matchId),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return const Scaffold(
+                      body: Center(child: CircularProgressIndicator()));
+                }
+                final validation =
+                    MatchDestinationResolver.validateLiveState(snapshot.data);
+                if (snapshot.hasError || validation != null) {
+                  return LiveMatchRecoveryScreen(
+                    matchId: matchId,
+                    reason: snapshot.hasError
+                        ? snapshot.error.toString()
+                        : validation!,
+                  );
+                }
+                return LiveScoringScreen(
+                    initialMatchState: snapshot.data!, deviceId: 'device_123');
+              },
+            );
+          },
+        ),
+        GoRoute(
+          path: '/scoring',
+          parentNavigatorKey: _rootNavigatorKey,
+          builder: (context, state) {
+            final matchState = state.extra as MatchState?;
+            if (matchState != null) {
+              return LiveScoringScreen(
+                initialMatchState: matchState,
+                deviceId: 'device_123',
+              );
+            }
+            return FutureBuilder<MatchesTableData?>(
+              future: ref.read(matchRepositoryProvider).getActiveMatch(),
+              builder: (context, snapshot) {
+                final active = snapshot.data;
+                if (active == null) {
+                  return const Scaffold(
+                      body: Center(child: Text('No active match found.')));
+                }
+                return FutureBuilder<MatchState?>(
+                  future: ref
+                      .read(matchRepositoryProvider)
+                      .getMatchState(active.id),
+                  builder: (context, snap2) {
+                    if (!snap2.hasData) {
+                      return const Scaffold(
+                          body: Center(child: CircularProgressIndicator()));
+                    }
+                    return LiveScoringScreen(
+                        initialMatchState: snap2.data!, deviceId: 'device_123');
+                  },
+                );
+              },
+            );
+          },
+        ),
+        GoRoute(
+          path: '/scorecard',
+          parentNavigatorKey: _rootNavigatorKey,
+          builder: (context, state) {
+            final engine = state.extra as CricketScoringEngine;
+            return ScorecardScreen(engine: engine);
+          },
+        ),
+        GoRoute(
+          path: '/matches/history/:matchId',
+          parentNavigatorKey: _rootNavigatorKey,
+          builder: (context, state) {
+            final matchId = state.pathParameters['matchId']!;
+            final repository = CompletedScorecardRepository(
+              ref.read(matchRepositoryProvider),
+            );
+            return FutureBuilder<CompletedMatchScorecard>(
+              future: repository.loadCompletedScorecard(matchId),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Scaffold(
+                      body: Center(child: CircularProgressIndicator()));
+                }
+                return CompletedMatchDetailsScreen(
+                  matchState: snapshot.data!.matchState,
+                );
+              },
+            );
+          },
+        ),
+        GoRoute(
+          path: '/matches/history/:matchId/pdf',
+          parentNavigatorKey: _rootNavigatorKey,
+          builder: (context, state) {
+            final matchId = state.pathParameters['matchId']!;
+            final repository = CompletedScorecardRepository(
+              ref.read(matchRepositoryProvider),
+            );
+            return FutureBuilder<CompletedMatchScorecard>(
+              future: repository.loadCompletedScorecard(matchId),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Scaffold(
+                    appBar: AppBar(title: const Text('PDF Scorecard')),
+                    body: Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          snapshot.error.toString(),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  );
+                }
+                if (!snapshot.hasData) {
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                return PdfPreviewScreen(
+                  matchState: snapshot.data!.matchState,
+                );
+              },
+            );
+          },
+        ),
+        GoRoute(
+          path: '/profile/personalize',
+          parentNavigatorKey: _rootNavigatorKey,
+          builder: (context, state) => const PersonalizationScreen(),
+        ),
+        GoRoute(
+          path: '/profile/launcher-icon',
+          parentNavigatorKey: _rootNavigatorKey,
+          builder: (context, state) => const LauncherIconScreen(),
+        ),
+      ],
+    );
+
+class MainScaffold extends StatelessWidget {
+  final Widget child;
+  const MainScaffold({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final location = GoRouterState.of(context).uri.toString();
+
+    int getIndex() {
+      if (location == '/') return 0;
+      if (location.startsWith('/matches')) return 1;
+      if (location.startsWith('/score')) return 2;
+      if (location.startsWith('/teams')) return 3;
+      if (location.startsWith('/profile')) return 4;
+      return 0;
+    }
+
+    return Scaffold(
+      body: child,
+      bottomNavigationBar: PremiumBottomNavigation(
+        selectedIndex: getIndex(),
+        onDestinationSelected: (index) {
+          switch (index) {
+            case 0:
+              context.go('/');
+              break;
+            case 1:
+              context.go('/matches');
+              break;
+            case 2:
+              context.go('/score');
+              break;
+            case 3:
+              context.go('/teams');
+              break;
+            case 4:
+              context.go('/profile');
+              break;
+          }
+        },
+      ),
+    );
+  }
+}
+
+// --- Welcome Screen ---
+
+class WelcomeScreen extends ConsumerWidget {
+  const WelcomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.sports_cricket,
+                  size: 90, color: AppColors.primary),
+              const SizedBox(height: 24),
+              const Text(
+                'Welcome to Cricket Scorer',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Create your first team and add players to begin scoring.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+              const SizedBox(height: 48),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () => context.push('/teams/create'),
+                  child: const Text('Create Your First Team',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () => context.push('/demo-scoring'),
+                child: const Text('Explore Demo',
+                    style: TextStyle(color: Colors.grey, fontSize: 15)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// --- Reactive Home Screen Dashboard ---
+
+class HomeScreen extends ConsumerWidget {
+  const HomeScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final homeState = ref.watch(homeDashboardStateProvider);
+
+    // 1. Loading State: Do NOT prematurely display 0-team empty state
+    if (homeState.isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    // 2. Stage 1: No Teams (0 teams in SQLite)
+    if (homeState.stage == HomeStage.noTeams) {
+      return const WelcomeScreen();
+    }
+
+    final profile = ref.watch(profileNotifierProvider);
+    Color primaryColor = const Color(0xFF0D6EFD);
+    try {
+      primaryColor =
+          Color(int.parse(profile.primaryColorHex.replaceFirst('#', '0xFF')));
+    } catch (_) {}
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            BrandLogo(size: 34),
+            SizedBox(width: 10),
+            Text('Cricket Dashboard'),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: CricketBadgeWidget(
+              jerseyNumber: profile.jerseyNumberDisplay,
+              style: profile.iconStyle,
+              primaryColor: primaryColor,
+              size: 32,
+            ),
+            tooltip: 'Profile & Settings',
+            onPressed: () => context.push('/profile'),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // Active Match / Resume Banner if present
+          if (homeState.activeMatch != null) ...[
+            AppCard(
+              color: AppColors.primary,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const StatusBadge(
+                    label: 'Live match',
+                    tone: StatusBadgeTone.live,
+                    icon: Icons.circle,
+                  ),
+                  const SizedBox(height: 12),
+                  FutureBuilder<MatchState?>(
+                    future: ref
+                        .read(matchRepositoryProvider)
+                        .getMatchState(homeState.activeMatch!.id),
+                    builder: (context, snapshot) {
+                      final matchState = snapshot.data;
+                      if (matchState == null || matchState.innings.isEmpty) {
+                        return const Text('Match ready to resume',
+                            style: TextStyle(color: Colors.white70));
+                      }
+                      return LiveMatchHeader.fromMatchState(
+                        matchState,
+                        darkSurface: true,
+                        compact: true,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: AppColors.primary,
+                      ),
+                      icon: const Icon(Icons.play_arrow_rounded),
+                      onPressed: () => context.push(
+                        MatchDestinationResolver.routeFor(
+                          matchId: homeState.activeMatch!.id,
+                          status: homeState.activeMatch!.status,
+                        ),
+                      ),
+                      label: const Text('Resume Match'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Stage 2: Exactly 1 Team Created
+          if (homeState.stage == HomeStage.oneTeam) ...[
+            Card(
+              color: AppColors.primary,
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Your first team is ready!',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Create one more team to set up your first match.',
+                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: AppColors.primary),
+                        icon: const Icon(Icons.group_add),
+                        label: const Text('CREATE SECOND TEAM',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        onPressed: () => context.push('/teams/create'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Display Created Team Card
+            if (homeState.teams.isNotEmpty) ...[
+              const Text('My Teams (1)',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              _buildTeamCard(context, ref, homeState.teams.first),
+              const SizedBox(height: 16),
+            ],
+
+            // Restricted Match Creation Warning
+            Card(
+              color: Colors.orange.shade50,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: const [
+                    Icon(Icons.info_outline, color: Colors.orange),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'You need at least two teams to create a match.',
+                        style: TextStyle(
+                            color: Colors.orange,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+
+          // Stage 3 & Match Ready Dashboard
+          if (homeState.stage == HomeStage.readyForMatch ||
+              homeState.stage == HomeStage.matchInProgress) ...[
+            if (homeState.activeMatch == null)
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildActionCard(
+                      context,
+                      title: 'Create Match',
+                      icon: Icons.sports_cricket,
+                      color: AppColors.primary,
+                      onTap: () => context.push('/matches/create'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildActionCard(
+                      context,
+                      title: 'Create Team',
+                      icon: Icons.group_add,
+                      color: AppColors.accent,
+                      onTap: () => context.push('/teams/create'),
+                    ),
+                  ),
+                ],
+              )
+            else
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'A match is already in progress.\nComplete the current match before creating a new one.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: () => context.go('/matches'),
+                        icon: const Icon(Icons.history),
+                        label: const Text('Match History'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            const SizedBox(height: 24),
+
+            // Teams Overview
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('My Teams (${homeState.teams.length})',
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold)),
+                TextButton(
+                  onPressed: () => context.push('/teams'),
+                  child: const Text('View All'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ...homeState.teams
+                .take(3)
+                .map((team) => _buildTeamCard(context, ref, team)),
+            const SizedBox(height: 24),
+          ],
+
+          // Draft Matches Section
+          if (homeState.activeMatch == null && homeState.drafts.isNotEmpty) ...[
+            const Text('Draft Matches',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            ...homeState.drafts.map((m) => Card(
+                  child: ListTile(
+                    title: Text(m.matchName ?? 'Continue Match Setup'),
+                    subtitle: Text('Format: ${m.format.toUpperCase()}'),
+                    trailing:
+                        const Icon(Icons.play_arrow, color: AppColors.primary),
+                    onTap: () =>
+                        context.push('/matches/create?draftId=${m.id}'),
+                  ),
+                )),
+            const SizedBox(height: 24),
+          ],
+
+          // Recent Matches Section
+          if (homeState.stage == HomeStage.readyForMatch ||
+              homeState.stage == HomeStage.matchInProgress) ...[
+            const Text('Recent Matches',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            homeState.recentMatches.isEmpty
+                ? const Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: Center(
+                          child: Text('No completed matches recorded yet.',
+                              style: TextStyle(color: Colors.grey))),
+                    ),
+                  )
+                : Column(
+                    children: homeState.recentMatches
+                        .map((m) => Card(
+                              child: ListTile(
+                                title: Text(m.matchName ?? 'Match ${m.id}'),
+                                subtitle:
+                                    Text('Status: ${m.status.toUpperCase()}'),
+                              ),
+                            ))
+                        .toList(),
+                  ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTeamCard(
+      BuildContext context, WidgetRef ref, TeamsTableData team) {
+    final teamColor = team.color != null
+        ? Color(int.parse(team.color!.replaceFirst('#', '0xFF')))
+        : AppColors.primary;
+
+    return FutureBuilder<List<PlayersTableData>>(
+      future: ref.read(teamRepositoryProvider).getTeamPlayers(team.id),
+      builder: (context, snapshot) {
+        final players = snapshot.data ?? [];
+        final captain = players.firstWhere(
+          (p) => p.isCaptain,
+          orElse: () => PlayersTableData(
+            id: '',
+            name: 'Not assigned',
+            role: '',
+            battingStyle: '',
+            bowlingStyle: '',
+            isCaptain: false,
+            isWicketKeeper: false,
+            createdAt: 0,
+            syncStatus: '',
+          ),
+        );
+
+        return AppCard(
+          padding: EdgeInsets.zero,
+          child: ListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            onTap: () => context.push('/teams/details', extra: team),
+            leading: CircleAvatar(
+              backgroundColor: teamColor,
+              child: Text(team.shortName,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12)),
+            ),
+            title: Text(team.name,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text(
+                '${players.length} Players • Captain: ${captain.name}',
+                style: const TextStyle(fontSize: 12)),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.person_add, color: AppColors.primary),
+                  tooltip: 'Add Players',
+                  onPressed: () =>
+                      context.push('/teams/add-players/${team.id}'),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Colors.blue),
+                  tooltip: 'Edit Team',
+                  onPressed: () => context.push('/teams/create?id=${team.id}'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildActionCard(BuildContext context,
+      {required String title,
+      required IconData icon,
+      required Color color,
+      required VoidCallback onTap}) {
+    return AppCard(
+      onTap: onTap,
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+      child: Column(
+        children: [
+          CircleAvatar(
+              backgroundColor: color.withValues(alpha: 0.1),
+              radius: 24,
+              child: Icon(icon, color: color, size: 28)),
+          const SizedBox(height: 12),
+          Text(title,
+              style:
+                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+        ],
+      ),
+    );
+  }
+}
+
+class MatchesScreen extends ConsumerStatefulWidget {
+  const MatchesScreen({super.key});
+
+  @override
+  ConsumerState<MatchesScreen> createState() => _MatchesScreenState();
+}
+
+class _MatchesScreenState extends ConsumerState<MatchesScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _selectedFilter = 'all';
+  bool _sortNewestFirst = true;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final matchesAsync = ref.watch(matchRepositoryProvider).getAllMatches();
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Match History')),
+      body: FutureBuilder<List<MatchesTableData>>(
+        future: matchesAsync,
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          var matches = snapshot.data ?? [];
+
+          // Filtering
+          if (_selectedFilter == 'completed') {
+            matches = matches.where((m) => m.status == 'completed').toList();
+          } else if (_selectedFilter == 'draft') {
+            matches = matches
+                .where((m) =>
+                    MatchDestinationResolver.resolveStatus(m.status) ==
+                        MatchDestination.setup ||
+                    MatchDestinationResolver.resolveStatus(m.status) ==
+                        MatchDestination.liveScoring ||
+                    MatchDestinationResolver.resolveStatus(m.status) ==
+                        MatchDestination.inningsBreak)
+                .toList();
+          }
+
+          // Search query
+          final query = _searchController.text.trim().toLowerCase();
+          if (query.isNotEmpty) {
+            matches = matches.where((m) {
+              final name = (m.matchName ?? '').toLowerCase();
+              final venue = (m.venueName ?? '').toLowerCase();
+              return name.contains(query) || venue.contains(query);
+            }).toList();
+          }
+
+          // Sorting
+          matches.sort((a, b) => _sortNewestFirst
+              ? b.createdAt.compareTo(a.createdAt)
+              : a.createdAt.compareTo(b.createdAt));
+
+          return Column(
+            children: [
+              // Search & Filter Header
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Column(
+                  children: [
+                    PremiumSearchBar(
+                      controller: _searchController,
+                      hintText: 'Search matches, teams, or venues',
+                      onChanged: (val) => setState(() {}),
+                      onClear: () {
+                        _searchController.clear();
+                        setState(() {});
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        ChoiceChip(
+                          label: const Text('All'),
+                          selected: _selectedFilter == 'all',
+                          onSelected: (val) =>
+                              setState(() => _selectedFilter = 'all'),
+                        ),
+                        const SizedBox(width: 6),
+                        ChoiceChip(
+                          label: const Text('Completed'),
+                          selected: _selectedFilter == 'completed',
+                          onSelected: (val) =>
+                              setState(() => _selectedFilter = 'completed'),
+                        ),
+                        const SizedBox(width: 6),
+                        ChoiceChip(
+                          label: const Text('Drafts / Active'),
+                          selected: _selectedFilter == 'draft',
+                          onSelected: (val) =>
+                              setState(() => _selectedFilter = 'draft'),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: Icon(_sortNewestFirst
+                              ? Icons.sort_by_alpha
+                              : Icons.history),
+                          tooltip: _sortNewestFirst
+                              ? 'Sort: Newest First'
+                              : 'Sort: Oldest First',
+                          onPressed: () => setState(
+                              () => _sortNewestFirst = !_sortNewestFirst),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              Expanded(
+                child: matches.isEmpty
+                    ? EmptyStateWidget(
+                        icon: Icons.calendar_month_rounded,
+                        title: 'No matches yet',
+                        message:
+                            'Create a match to start scoring. Completed games and scorecards will stay available here.',
+                        actionLabel: 'Create Match',
+                        onAction: () => context.push('/matches/create'),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        itemCount: matches.length,
+                        itemBuilder: (ctx, idx) {
+                          final m = matches[idx];
+                          final dateStr =
+                              DateTime.fromMillisecondsSinceEpoch(m.createdAt)
+                                  .toIso8601String()
+                                  .split('T')
+                                  .first;
+                          final destination =
+                              MatchDestinationResolver.resolveStatus(m.status);
+                          final isLive =
+                              destination == MatchDestination.liveScoring ||
+                                  destination == MatchDestination.inningsBreak;
+                          final isCompleted = destination ==
+                              MatchDestination.completedScorecard;
+                          final statusColor = isCompleted
+                              ? Colors.green
+                              : isLive
+                                  ? Colors.red.shade700
+                                  : Colors.orange.shade700;
+                          final statusLabel = isLive
+                              ? (destination == MatchDestination.inningsBreak
+                                  ? 'Innings break'
+                                  : 'Live')
+                              : m.status == 'noResult'
+                                  ? 'No result'
+                                  : m.resultType == 'teamForfeit'
+                                      ? 'Forfeit'
+                                      : m.status;
+                          final statusTone = isLive
+                              ? StatusBadgeTone.live
+                              : isCompleted
+                                  ? StatusBadgeTone.success
+                                  : m.status == 'abandoned' ||
+                                          m.status == 'cancelled'
+                                      ? StatusBadgeTone.danger
+                                      : StatusBadgeTone.warning;
+
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            child: InkWell(
+                              onTap: () => context.push(
+                                MatchDestinationResolver.routeFor(
+                                  matchId: m.id,
+                                  status: m.status,
+                                ),
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Padding(
+                                padding: const EdgeInsets.all(14),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    CircleAvatar(
+                                      backgroundColor: statusColor,
+                                      child: Icon(
+                                        isCompleted
+                                            ? Icons.emoji_events
+                                            : isLive
+                                                ? Icons.play_arrow
+                                                : Icons.edit,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(children: [
+                                            Expanded(
+                                              child: Text(
+                                                m.matchName ?? 'Match ${m.id}',
+                                                style: const TextStyle(
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                              ),
+                                            ),
+                                            StatusBadge(
+                                              label: statusLabel,
+                                              tone: statusTone,
+                                            ),
+                                          ]),
+                                          Text(
+                                            '${m.format.toUpperCase()} • $dateStr • ${m.venueName ?? "Local Field"}',
+                                          ),
+                                          if (m.endedManually)
+                                            Text(
+                                              '${m.resultText ?? 'Match ended'}${m.endReasonText == null ? '' : ' — ${m.endReasonText}'}',
+                                              style: const TextStyle(
+                                                  fontWeight: FontWeight.w600),
+                                            ),
+                                          if (isLive)
+                                            FutureBuilder<MatchState?>(
+                                              future: ref
+                                                  .read(matchRepositoryProvider)
+                                                  .getMatchState(m.id),
+                                              builder: (context, state) {
+                                                final live = state.data;
+                                                if (live == null ||
+                                                    live.innings.isEmpty) {
+                                                  return const SizedBox
+                                                      .shrink();
+                                                }
+                                                return Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          top: 8),
+                                                  child: LiveMatchHeader
+                                                      .fromMatchState(
+                                                    live,
+                                                    compact: true,
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          const SizedBox(height: 8),
+                                          Align(
+                                            alignment: Alignment.centerRight,
+                                            child: TextButton.icon(
+                                              onPressed: () => context.push(
+                                                MatchDestinationResolver
+                                                    .routeFor(
+                                                  matchId: m.id,
+                                                  status: m.status,
+                                                ),
+                                              ),
+                                              icon: Icon(isLive
+                                                  ? Icons.play_circle
+                                                  : isCompleted
+                                                      ? Icons.scoreboard
+                                                      : Icons.edit_note),
+                                              label: Text(
+                                                MatchDestinationResolver
+                                                    .actionLabel(m.status),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class ScoreTabScreen extends ConsumerWidget {
+  const ScoreTabScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeMatchAsync =
+        ref.watch(matchRepositoryProvider).getActiveMatch();
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Live Score')),
+      body: FutureBuilder<MatchesTableData?>(
+        future: activeMatchAsync,
+        builder: (context, snapshot) {
+          final active = snapshot.data;
+          if (active == null) {
+            return EmptyStateWidget(
+              icon: Icons.scoreboard_rounded,
+              title: 'No live match',
+              message:
+                  'Create a match to unlock live scoring, player figures, and ball-by-ball updates.',
+              actionLabel: 'Create Match',
+              onAction: () => context.push('/matches/create'),
+            );
+          }
+
+          return FutureBuilder<MatchState?>(
+            future: ref.read(matchRepositoryProvider).getMatchState(active.id),
+            builder: (context, matchSnapshot) {
+              if (!matchSnapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final engine = CricketScoringEngine(matchSnapshot.data!);
+              return ScorecardScreen(engine: engine);
+            },
+          );
+        },
+      ),
+    );
+  }
+}

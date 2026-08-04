@@ -1,0 +1,8 @@
+{
+  "minimum": 1,
+  "maximum": 99,
+  "variantCount": 99,
+  "style": "shield",
+  "nativeSourceSize": 1024,
+  "previewIsNativeSource": false
+}

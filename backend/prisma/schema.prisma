@@ -1,0 +1,97 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum MatchStatus {
+  DRAFT
+  LIVE
+  COMPLETED
+  ABANDONED
+}
+
+enum SyncStatus {
+  PENDING
+  SYNCED
+  CONFLICT
+}
+
+model User {
+  id           String      @id @default(uuid())
+  phoneNumber  String      @unique
+  name         String
+  role         String      @default("SCORER")
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Team {
+  id        String   @id @default(uuid())
+  name      String
+  shortName String
+  logoUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Player {
+  id           String   @id @default(uuid())
+  name         String
+  phoneNumber  String?
+  battingStyle String   @default("RIGHT_HAND")
+  bowlingStyle String   @default("RIGHT_ARM_FAST")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Match {
+  id                   String          @id @default(uuid())
+  tournamentId         String?
+  teamAId              String
+  teamBId              String
+  format               String          @default("T20")
+  venueName            String?
+  scheduledAt          DateTime
+  tossWinnerTeamId     String?
+  tossDecision         String?
+  status               MatchStatus     @default(DRAFT)
+  currentScorerDeviceId String
+  version              Int             @default(1)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  deliveries           DeliveryEvent[]
+}
+
+model DeliveryEvent {
+  eventId               String      @id
+  matchId               String
+  match                 Match       @relation(fields: [matchId], references: [id])
+  inningsId             String
+  overNumber            Int
+  legalBallNumber       Int
+  eventSequence         Int
+  scorerDeviceId        String
+  strikerId             String
+  nonStrikerId          String
+  bowlerId              String
+  runsBatter            Int         @default(0)
+  extrasType            String?
+  extrasRuns            Int         @default(0)
+  isLegal               Boolean     @default(true)
+  isBoundaryFour        Boolean     @default(false)
+  isBoundarySix         Boolean     @default(false)
+  wicketType            String?
+  dismissedPlayerId     String?
+  fielderId             String?
+  isReversed            Boolean     @default(false)
+  previousEventHash     String
+  clientTimestamp       DateTime
+  serverTimestamp       DateTime    @default(now())
+
+  @@unique([matchId, eventSequence])
+  @@index([matchId, inningsId])
+}

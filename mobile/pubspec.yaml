@@ -1,0 +1,46 @@
+name: cricket_scorer
+description: Offline-first cricket scoring mobile application built with Flutter, Riverpod, and Drift.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.10.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cricket_scoring_engine:
+    path: ../packages/cricket_scoring_engine
+  flutter_riverpod: ^2.4.9
+  go_router: ^13.0.0
+  drift: ^2.14.1
+  sqlite3_flutter_libs: ^0.5.18
+  path_provider: ^2.1.2
+  path: ^1.8.3
+  dio: ^5.4.0
+  connectivity_plus: ^5.0.2
+  uuid: ^4.3.3
+  shared_preferences: ^2.5.5
+  pdf: ^3.10.8
+  printing: ^5.11.1
+  share_plus: ^7.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  image: ^4.8.0
+  drift_dev: ^2.14.1
+  build_runner: ^2.4.8
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/branding/cricket_scorer_mark.png
+    - assets/branding/cricket_scorer_icon_1024.png
+    - assets/branding/launcher_icon_master.png
+    - assets/branding/launcher_previews/
+  fonts:
+    - family: Manrope
+      fonts:
+        - asset: assets/fonts/Manrope-VariableFont_wght.ttf
