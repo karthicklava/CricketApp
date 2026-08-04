@@ -16,6 +16,294 @@ enum ScorecardHeaderState {
 String pluralizeScore(int value, String singular, String plural) =>
     '$value ${value == 1 ? singular : plural}';
 
+enum LiveMatchCardVariant {
+  homeFeatured,
+  historyCompact,
+  scorecardHeader,
+  liveScoreHeader,
+}
+
+enum MatchConnectionState { online, savedOffline }
+
+class LiveMatchSummaryCard extends StatelessWidget {
+  const LiveMatchSummaryCard({
+    super.key,
+    required this.battingTeamName,
+    required this.bowlingTeamName,
+    required this.inningsNumber,
+    required this.score,
+    required this.overs,
+    required this.totalOvers,
+    required this.currentRunRate,
+    required this.variant,
+    this.requiredRunRate,
+    this.target,
+    this.runsRequired,
+    this.ballsRemaining,
+    this.connectionState = MatchConnectionState.online,
+    this.isCompleted = false,
+    this.resultText,
+    this.darkSurface = true,
+    this.onResume,
+  });
+
+  factory LiveMatchSummaryCard.fromMatchState(
+    MatchState state, {
+    Key? key,
+    required LiveMatchCardVariant variant,
+    MatchConnectionState connectionState = MatchConnectionState.online,
+    bool darkSurface = true,
+    VoidCallback? onResume,
+  }) {
+    final innings = state.activeInnings;
+    final batting =
+        innings.battingTeamId == state.teamA.id ? state.teamA : state.teamB;
+    final bowling =
+        innings.bowlingTeamId == state.teamA.id ? state.teamA : state.teamB;
+    final ballsPerOver = state.config.ballsPerOver;
+    final ballsRemaining =
+        state.config.totalOvers * ballsPerOver - innings.legalBallsBowled;
+    final safeBallsRemaining = ballsRemaining < 0 ? 0 : ballsRemaining;
+    final rawRunsRequired = innings.targetRuns == null
+        ? null
+        : innings.targetRuns! - innings.totalRuns;
+    final runsRequired = rawRunsRequired == null
+        ? null
+        : rawRunsRequired < 0
+            ? 0
+            : rawRunsRequired;
+    final crr = innings.legalBallsBowled == 0
+        ? 0.0
+        : innings.totalRuns / (innings.legalBallsBowled / ballsPerOver);
+    final rrr = innings.targetRuns == null
+        ? null
+        : safeBallsRemaining == 0 || runsRequired == 0
+            ? 0.0
+            : runsRequired! / (safeBallsRemaining / ballsPerOver);
+    final terminal = state.status == MatchStatus.completed ||
+        state.status == MatchStatus.abandoned ||
+        state.status == MatchStatus.cancelled ||
+        state.status == MatchStatus.noResult;
+    return LiveMatchSummaryCard(
+      key: key,
+      battingTeamName: batting.shortName,
+      bowlingTeamName: bowling.shortName,
+      inningsNumber: innings.inningsNumber,
+      score: '${innings.totalRuns}/${innings.totalWickets}',
+      overs: innings.oversFormatted,
+      totalOvers: state.config.totalOvers,
+      currentRunRate: crr,
+      requiredRunRate: rrr,
+      target: innings.targetRuns,
+      runsRequired: runsRequired,
+      ballsRemaining: innings.targetRuns == null ? null : safeBallsRemaining,
+      variant: variant,
+      connectionState: connectionState,
+      isCompleted: terminal,
+      resultText: state.manualResultText ?? state.result?.resultString,
+      darkSurface: darkSurface,
+      onResume: terminal ? null : onResume,
+    );
+  }
+
+  final String battingTeamName;
+  final String bowlingTeamName;
+  final int inningsNumber;
+  final String score;
+  final String overs;
+  final int totalOvers;
+  final double currentRunRate;
+  final double? requiredRunRate;
+  final int? target;
+  final int? runsRequired;
+  final int? ballsRemaining;
+  final LiveMatchCardVariant variant;
+  final MatchConnectionState connectionState;
+  final bool isCompleted;
+  final String? resultText;
+  final bool darkSurface;
+  final VoidCallback? onResume;
+
+  bool get _compact => variant == LiveMatchCardVariant.historyCompact;
+  String get _inningsLabel => switch (inningsNumber) {
+        1 => '1st Innings',
+        2 => '2nd Innings',
+        3 => '3rd Innings',
+        _ => '${inningsNumber}th Innings',
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = darkSurface ? Colors.white : AppColors.textPrimary;
+    final secondary = darkSurface ? Colors.white70 : AppColors.textSecondary;
+    final accent = darkSurface ? AppColors.accent : AppColors.primary;
+    final chase = !isCompleted && target != null;
+    final semantics = isCompleted
+        ? '$battingTeamName versus $bowlingTeamName. Match completed. Score $score after $overs overs. ${resultText ?? ''}'
+        : 'Live match. $battingTeamName batting against $bowlingTeamName. $_inningsLabel. Score $score. $overs overs of $totalOvers. '
+            '${chase ? 'Target $target. Need $runsRequired runs from $ballsRemaining balls. ' : ''}'
+            'Current run rate ${currentRunRate.toStringAsFixed(2)}.'
+            '${requiredRunRate == null ? '' : ' Required run rate ${requiredRunRate!.toStringAsFixed(2)}.'}';
+    return Semantics(
+      container: true,
+      label: semantics,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(children: [
+            Expanded(
+              child: Text(isCompleted ? 'COMPLETED' : 'LIVE MATCH',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      color: isCompleted ? secondary : const Color(0xFFFF7A72),
+                      fontSize: _compact ? 10 : 11,
+                      letterSpacing: .8,
+                      fontWeight: FontWeight.w900)),
+            ),
+            if (!isCompleted)
+              Flexible(
+                child: Text(_inningsLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        color: secondary,
+                        fontSize: _compact ? 11 : 12,
+                        fontWeight: FontWeight.w700)),
+              ),
+            if (!isCompleted) const SizedBox(width: 10),
+            Icon(
+              connectionState == MatchConnectionState.online
+                  ? Icons.cloud_done_outlined
+                  : Icons.cloud_off_outlined,
+              size: 14,
+              color: secondary,
+            ),
+            if (connectionState == MatchConnectionState.savedOffline) ...[
+              const SizedBox(width: 4),
+              Text('Saved offline',
+                  style: TextStyle(color: secondary, fontSize: 10)),
+            ],
+          ]),
+          SizedBox(height: _compact ? 8 : 10),
+          Text(isCompleted ? battingTeamName : '$battingTeamName batting',
+              key: const ValueKey('live-summary-batting-team'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  color: primary,
+                  fontSize: _compact ? 14 : 17,
+                  fontWeight: FontWeight.w800)),
+          Text('vs $bowlingTeamName',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: secondary, fontSize: 12)),
+          SizedBox(height: _compact ? 7 : 10),
+          Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            Expanded(
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 180),
+                  layoutBuilder: (currentChild, previousChildren) => Stack(
+                    alignment: Alignment.centerLeft,
+                    children: [
+                      ...previousChildren,
+                      if (currentChild != null) currentChild,
+                    ],
+                  ),
+                  child: FittedBox(
+                    key: ValueKey('live-summary-score-$score'),
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(score,
+                        maxLines: 1,
+                        textAlign: TextAlign.left,
+                        style: TextStyle(
+                            color: primary,
+                            fontSize: _compact ? 27 : 42,
+                            height: 1,
+                            fontWeight: FontWeight.w900)),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Text('$overs / $totalOvers overs',
+                    key: const ValueKey('live-summary-overs'),
+                    maxLines: 1,
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                        color: primary,
+                        fontSize: _compact ? 12 : 15,
+                        fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ]),
+          if (isCompleted) ...[
+            const SizedBox(height: 10),
+            Text(resultText ?? 'Match completed',
+                style: TextStyle(
+                    color: accent,
+                    fontSize: _compact ? 14 : 17,
+                    fontWeight: FontWeight.w900)),
+          ] else ...[
+            if (chase) ...[
+              SizedBox(height: _compact ? 7 : 10),
+              Text(
+                'Need ${pluralizeScore(runsRequired!, 'run', 'runs')} from ${pluralizeScore(ballsRemaining!, 'ball', 'balls')}',
+                style: TextStyle(
+                    color: accent,
+                    fontSize: _compact ? 12 : 14,
+                    fontWeight: FontWeight.w800),
+              ),
+              if (!_compact)
+                Text('Target $target',
+                    style: TextStyle(color: secondary, fontSize: 11)),
+            ],
+            SizedBox(height: _compact ? 6 : 9),
+            Row(children: [
+              Expanded(
+                  child: Text('CRR ${currentRunRate.toStringAsFixed(2)}',
+                      key: const ValueKey('live-summary-crr'),
+                      style: TextStyle(
+                          color: secondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700))),
+              if (chase)
+                Expanded(
+                    child: Text('RRR ${requiredRunRate!.toStringAsFixed(2)}',
+                        textAlign: TextAlign.right,
+                        style: TextStyle(
+                            color: secondary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700))),
+            ]),
+          ],
+          if (onResume != null) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 42,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: AppColors.primary),
+                onPressed: onResume,
+                icon: const Icon(Icons.play_arrow_rounded, size: 19),
+                label: const Text('Resume Match'),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class ScorecardMatchHeader extends StatelessWidget {
   const ScorecardMatchHeader({super.key, required this.matchState});
 
@@ -275,95 +563,22 @@ class LiveMatchHeader extends StatelessWidget {
   final bool compact;
   final Widget? trailing;
 
-  String get _inningsLabel => inningsNumber == 1
-      ? '1st Innings'
-      : inningsNumber == 2
-          ? '2nd Innings'
-          : inningsNumber == 3
-              ? '3rd Innings'
-              : '${inningsNumber}th Innings';
-
   @override
-  Widget build(BuildContext context) {
-    final primaryText = darkSurface ? Colors.white : AppColors.textPrimary;
-    final secondaryText =
-        darkSurface ? Colors.white70 : AppColors.textSecondary;
-    final accent = darkSurface ? AppColors.accent : AppColors.primary;
-    return Semantics(
-      label:
-          '${battingTeam.name} batting against ${bowlingTeam.name}, $_inningsLabel, $currentScore after $overs overs',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Icon(Icons.sports_cricket_rounded,
-                color: accent, size: compact ? 18 : 22),
-            const SizedBox(width: 8),
-            Expanded(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                  Text('${battingTeam.shortName} Batting',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          color: primaryText,
-                          fontSize: compact ? 15 : 18,
-                          fontWeight: FontWeight.w900)),
-                  Text('vs ${bowlingTeam.shortName} · Bowling',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          color: secondaryText,
-                          fontSize: compact ? 11 : 12,
-                          fontWeight: FontWeight.w600)),
-                ])),
-            if (trailing != null) ...[const SizedBox(width: 8), trailing!],
-          ]),
-          SizedBox(height: compact ? 7 : 10),
-          Wrap(
-            spacing: 16,
-            runSpacing: 5,
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.end,
-            children: [
-              Text(currentScore,
-                  style: TextStyle(
-                      color: primaryText,
-                      fontSize: compact ? 25 : 40,
-                      height: 1,
-                      fontWeight: FontWeight.w900)),
-              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                Text(_inningsLabel,
-                    style: TextStyle(
-                        color: accent,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800)),
-                const SizedBox(height: 2),
-                Text('Overs $overs / $totalOvers',
-                    style: TextStyle(
-                        color: primaryText,
-                        fontSize: compact ? 12 : 14,
-                        fontWeight: FontWeight.w700)),
-              ]),
-            ],
-          ),
-          SizedBox(height: compact ? 4 : 7),
-          Text(
-              'CRR ${crr.toStringAsFixed(2)}${rrr == null ? '' : ' · RRR ${rrr!.toStringAsFixed(2)}'}',
-              style: TextStyle(
-                  color: secondaryText,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600)),
-          if (target != null) ...[
-            const SizedBox(height: 4),
-            Text(
-                'Target $target · Need ${pluralizeScore(runsNeeded!, 'run', 'runs')} from ${pluralizeScore(ballsRemaining!, 'ball', 'balls')}',
-                style: TextStyle(
-                    color: accent, fontSize: 12, fontWeight: FontWeight.w800)),
-          ],
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => LiveMatchSummaryCard(
+        battingTeamName: battingTeam.shortName,
+        bowlingTeamName: bowlingTeam.shortName,
+        inningsNumber: inningsNumber,
+        score: currentScore,
+        overs: overs,
+        totalOvers: totalOvers,
+        currentRunRate: crr,
+        requiredRunRate: rrr,
+        target: target,
+        runsRequired: runsNeeded,
+        ballsRemaining: ballsRemaining,
+        variant: compact
+            ? LiveMatchCardVariant.historyCompact
+            : LiveMatchCardVariant.scorecardHeader,
+        darkSurface: darkSurface,
+      );
 }

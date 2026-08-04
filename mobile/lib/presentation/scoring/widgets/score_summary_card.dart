@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cricket_scoring_engine/cricket_scoring_engine.dart';
-import '../../../core/theme.dart';
 import '../../common/widgets/live_match_header.dart';
 import 'over_delivery_sequence.dart';
 
@@ -71,38 +70,13 @@ class ScoreSummaryCard extends StatelessWidget {
         ),
         child: Column(
           children: [
-            LiveMatchHeader.fromMatchState(
+            LiveMatchSummaryCard.fromMatchState(
               matchState,
+              variant: LiveMatchCardVariant.liveScoreHeader,
               darkSurface: true,
-              compact: compact,
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isOnline
-                      ? AppColors.onlineGreen
-                      : AppColors.offlineOrange,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      isOnline ? Icons.cloud_done : Icons.cloud_off,
-                      color: Colors.white,
-                      size: 14,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      syncStatusText,
-                      maxLines: 1,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              connectionState: isOnline
+                  ? MatchConnectionState.online
+                  : MatchConnectionState.savedOffline,
             ),
             Divider(color: Colors.white24, height: compact ? 12 : 20),
             Align(

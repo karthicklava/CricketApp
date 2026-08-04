@@ -61,8 +61,8 @@ void main() {
         );
 
     await tester.pumpWidget(summary());
-    expect(find.text('ALP Batting'), findsOneWidget);
-    expect(find.text('vs BET · Bowling'), findsOneWidget);
+    expect(find.text('ALP batting'), findsOneWidget);
+    expect(find.text('vs BET'), findsOneWidget);
     expect(find.text('1st Innings'), findsOneWidget);
 
     for (var ball = 0; ball < 6; ball++) {
@@ -78,8 +78,8 @@ void main() {
       openingBowlerId: 'a1',
     );
     await tester.pumpWidget(summary());
-    expect(find.text('BET Batting'), findsOneWidget);
-    expect(find.text('vs ALP · Bowling'), findsOneWidget);
+    expect(find.text('BET batting'), findsOneWidget);
+    expect(find.text('vs ALP'), findsOneWidget);
     expect(find.text('2nd Innings'), findsOneWidget);
     expect(find.textContaining('Target 2'), findsOneWidget);
   });
@@ -125,7 +125,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Overs 0.3 / 20'), findsOneWidget);
+    expect(find.text('0.3 / 20 overs'), findsOneWidget);
     expect(find.text('Current Over · 1'), findsOneWidget);
     expect(find.textContaining('legal balls'), findsNothing);
     expect(find.byType(OverDeliverySequence), findsOneWidget);
@@ -182,19 +182,19 @@ void main() {
 
     expect(engine.state.activeInnings.legalBallsBowled, 10);
     await tester.pumpWidget(score(engine.state));
-    expect(find.text('Overs 1.4 / 3'), findsOneWidget);
+    expect(find.text('1.4 / 3 overs'), findsOneWidget);
     expect(find.text('Current Over · 2'), findsOneWidget);
     expect(find.text('4'), findsNWidgets(4));
     expect(find.text('This over: 16 runs · 0 wickets'), findsOneWidget);
 
     final resumed = MatchState.fromJson(engine.state.toJson());
     await tester.pumpWidget(score(resumed));
-    expect(find.text('Overs 1.4 / 3'), findsOneWidget);
+    expect(find.text('1.4 / 3 overs'), findsOneWidget);
     expect(find.text('Current Over · 2'), findsOneWidget);
 
     engine.undoLastDelivery();
     await tester.pumpWidget(score(engine.state));
-    expect(find.text('Overs 1.3 / 3'), findsOneWidget);
+    expect(find.text('1.3 / 3 overs'), findsOneWidget);
     expect(find.text('Current Over · 2'), findsOneWidget);
     expect(find.text('4'), findsNWidgets(3));
   });

@@ -253,6 +253,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Target 47 · Need 1 run from 1 ball'), findsOneWidget);
+    expect(find.text('Need 1 run from 1 ball'), findsOneWidget);
+    expect(find.text('Target 47'), findsOneWidget);
   });
 }

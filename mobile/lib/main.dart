@@ -469,12 +469,6 @@ class HomeScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const StatusBadge(
-                    label: 'Live match',
-                    tone: StatusBadgeTone.live,
-                    icon: Icons.circle,
-                  ),
-                  const SizedBox(height: 12),
                   FutureBuilder<MatchState?>(
                     future: ref
                         .read(matchRepositoryProvider)
@@ -485,30 +479,18 @@ class HomeScreen extends ConsumerWidget {
                         return const Text('Match ready to resume',
                             style: TextStyle(color: Colors.white70));
                       }
-                      return LiveMatchHeader.fromMatchState(
+                      return LiveMatchSummaryCard.fromMatchState(
                         matchState,
+                        variant: LiveMatchCardVariant.homeFeatured,
                         darkSurface: true,
-                        compact: true,
+                        onResume: () => context.push(
+                          MatchDestinationResolver.routeFor(
+                            matchId: homeState.activeMatch!.id,
+                            status: homeState.activeMatch!.status,
+                          ),
+                        ),
                       );
                     },
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: AppColors.primary,
-                      ),
-                      icon: const Icon(Icons.play_arrow_rounded),
-                      onPressed: () => context.push(
-                        MatchDestinationResolver.routeFor(
-                          matchId: homeState.activeMatch!.id,
-                          status: homeState.activeMatch!.status,
-                        ),
-                      ),
-                      label: const Text('Resume Match'),
-                    ),
                   ),
                 ],
               ),
@@ -618,23 +600,14 @@ class HomeScreen extends ConsumerWidget {
                 ],
               )
             else
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      const Text(
-                        'A match is already in progress.\nComplete the current match before creating a new one.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 12),
-                      OutlinedButton.icon(
-                        onPressed: () => context.go('/matches'),
-                        icon: const Icon(Icons.history),
-                        label: const Text('Match History'),
-                      ),
-                    ],
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                  'New match creation is unavailable while this match is live.',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -1040,10 +1013,13 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                                                   padding:
                                                       const EdgeInsets.only(
                                                           top: 8),
-                                                  child: LiveMatchHeader
+                                                  child: LiveMatchSummaryCard
                                                       .fromMatchState(
                                                     live,
-                                                    compact: true,
+                                                    variant:
+                                                        LiveMatchCardVariant
+                                                            .historyCompact,
+                                                    darkSurface: false,
                                                   ),
                                                 );
                                               },
