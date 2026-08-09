@@ -230,7 +230,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -377,6 +377,11 @@ class AppDatabase extends _$AppDatabase {
               WHERE bowling_style IS NULL OR TRIM(bowling_style) = ''
             ''');
           }
+          if (from < 16) {
+            await customStatement(
+                'DROP INDEX IF EXISTS idx_single_active_match');
+            await customStatement(_singleActiveMatchIndexSql);
+          }
         },
       );
 
@@ -514,8 +519,10 @@ class AppDatabase extends _$AppDatabase {
         'ready',
         'tossCompleted',
         'live',
+        'inningsReview',
         'inProgress',
         'inningsBreak',
+        'matchReview',
         'awaitingNextBatter',
         'awaitingNextBowler',
         'paused',
@@ -552,8 +559,10 @@ class AppDatabase extends _$AppDatabase {
     'ready',
     'tossCompleted',
     'live',
+    'inningsReview',
     'inProgress',
     'inningsBreak',
+    'matchReview',
     'awaitingNextBatter',
     'awaitingNextBowler',
     'paused',
@@ -564,7 +573,8 @@ class AppDatabase extends _$AppDatabase {
 
   static const String _activeStatusSqlList =
       "'setupCompleted','ready','tossCompleted','live','inProgress',"
-      "'inningsBreak','awaitingNextBatter','awaitingNextBowler','paused',"
+      "'inningsReview','inningsBreak','matchReview',"
+      "'awaitingNextBatter','awaitingNextBowler','paused',"
       "'secondInnings','secondInningsSetup','resultPending'";
   static const String _singleActiveMatchIndexSql =
       'CREATE UNIQUE INDEX IF NOT EXISTS idx_single_active_match '

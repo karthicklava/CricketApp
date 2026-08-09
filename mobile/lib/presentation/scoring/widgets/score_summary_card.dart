@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:cricket_scoring_engine/cricket_scoring_engine.dart';
 import '../../common/widgets/live_match_header.dart';
 import 'over_delivery_sequence.dart';
+import 'compact_live_players_section.dart';
 
 class ScoreSummaryCard extends StatelessWidget {
   final MatchState matchState;
   final String syncStatusText;
   final bool isOnline;
   final bool compact;
+  final LivePlayerFigures? liveFigures;
+  final VoidCallback? onMorePressed;
+  final VoidCallback? onBowlerPressed;
 
   const ScoreSummaryCard({
     super.key,
@@ -15,6 +19,9 @@ class ScoreSummaryCard extends StatelessWidget {
     required this.syncStatusText,
     required this.isOnline,
     this.compact = false,
+    this.liveFigures,
+    this.onMorePressed,
+    this.onBowlerPressed,
   });
 
   @override
@@ -29,8 +36,17 @@ class ScoreSummaryCard extends StatelessWidget {
           Player(id: inn.currentBowlerId ?? '', name: 'Awaiting next bowler'),
     );
 
-    final currentOverNumber =
+    final calculatedOverNumber =
         inn.legalBallsBowled ~/ matchState.config.ballsPerOver;
+    final lastInningsEvents = matchState.events
+        .where((event) => event.inningsId == inn.inningsId)
+        .toList();
+    final currentOverNumber = inn.isCompleted && lastInningsEvents.isNotEmpty
+        ? lastInningsEvents.last.overNumber
+        : calculatedOverNumber.clamp(
+            0,
+            matchState.config.totalOvers - 1,
+          ) as int;
     final currentOver = matchState.events
         .where((event) =>
             event.inningsId == inn.inningsId &&
@@ -56,10 +72,10 @@ class ScoreSummaryCard extends StatelessWidget {
     }
 
     return Card(
-      margin: EdgeInsets.fromLTRB(12, compact ? 6 : 12, 12, compact ? 4 : 12),
+      margin: EdgeInsets.fromLTRB(10, compact ? 4 : 12, 10, compact ? 4 : 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
-        padding: EdgeInsets.all(compact ? 12 : 16),
+        padding: EdgeInsets.all(compact ? 10 : 16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           gradient: const LinearGradient(
@@ -72,18 +88,20 @@ class ScoreSummaryCard extends StatelessWidget {
           children: [
             LiveMatchSummaryCard.fromMatchState(
               matchState,
-              variant: LiveMatchCardVariant.liveScoreHeader,
+              variant: compact
+                  ? LiveMatchCardVariant.liveScoringCompact
+                  : LiveMatchCardVariant.liveScoreHeader,
               darkSurface: true,
               connectionState: isOnline
                   ? MatchConnectionState.online
                   : MatchConnectionState.savedOffline,
             ),
-            Divider(color: Colors.white24, height: compact ? 12 : 20),
+            Divider(color: Colors.white24, height: compact ? 8 : 20),
             Align(
               alignment: Alignment.centerLeft,
               child: CurrentOverWidget(
                 title: 'Current Over · $activeOverNumber',
-                bowlerName: bowler.name,
+                bowlerName: liveFigures == null ? bowler.name : null,
                 deliveries: displayItems,
                 ballsPerOver: matchState.config.ballsPerOver,
                 currentOverRuns: overRuns,
@@ -102,6 +120,15 @@ class ScoreSummaryCard extends StatelessWidget {
                   'due to ${replacement.reason.name}.',
                   style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
+              ),
+            ],
+            if (liveFigures != null) ...[
+              const Divider(color: Colors.white24, height: 8),
+              CompactLivePlayersSection(
+                figures: liveFigures!,
+                matchState: matchState,
+                onMorePressed: onMorePressed ?? () {},
+                onBowlerPressed: onBowlerPressed,
               ),
             ],
           ],

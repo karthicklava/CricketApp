@@ -372,7 +372,7 @@ class _PersonalizationScreenState extends ConsumerState<PersonalizationScreen> {
           // Action Buttons
           SizedBox(
             width: double.infinity,
-            height: 50,
+            height: AppCtaStyle.height,
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,

@@ -45,10 +45,8 @@ void main() {
 
   test('normal runs, boundaries and strike rotation stay with each batter', () {
     final engine = engineFor();
-    engine.recordDelivery(
-        eventId: '1', scorerDeviceId: 't', runsBatter: 4);
-    engine.recordDelivery(
-        eventId: '2', scorerDeviceId: 't', runsBatter: 1);
+    engine.recordDelivery(eventId: '1', scorerDeviceId: 't', runsBatter: 4);
+    engine.recordDelivery(eventId: '2', scorerDeviceId: 't', runsBatter: 1);
     final figures = service.calculate(engine.state);
 
     expect(figures.striker.playerId, 'a2');
@@ -174,12 +172,10 @@ void main() {
 
   test('new and returning bowlers load their event-derived figures', () {
     final engine = engineFor();
-    engine.recordDelivery(
-        eventId: '1', scorerDeviceId: 't', runsBatter: 2);
+    engine.recordDelivery(eventId: '1', scorerDeviceId: 't', runsBatter: 2);
     engine.changeBowler('b2');
     expect(service.calculate(engine.state).bowler.runsConceded, 0);
-    engine.recordDelivery(
-        eventId: '2', scorerDeviceId: 't', runsBatter: 1);
+    engine.recordDelivery(eventId: '2', scorerDeviceId: 't', runsBatter: 1);
     engine.changeBowler('b1');
     final returned = service.calculate(engine.state).bowler;
     expect(returned.runsConceded, 2);
@@ -188,10 +184,8 @@ void main() {
 
   test('undo and serialized resume restore exact live figures', () {
     final engine = engineFor();
-    engine.recordDelivery(
-        eventId: '1', scorerDeviceId: 't', runsBatter: 4);
-    engine.recordDelivery(
-        eventId: '2', scorerDeviceId: 't', runsBatter: 1);
+    engine.recordDelivery(eventId: '1', scorerDeviceId: 't', runsBatter: 4);
+    engine.recordDelivery(eventId: '2', scorerDeviceId: 't', runsBatter: 1);
     engine.undoLastDelivery();
     final before = service.calculate(engine.state);
     final restored =

@@ -66,6 +66,7 @@ void main() {
         dismissedPlayerId: 'a1',
       ),
     );
+    engine.confirmInningsEnd();
     engine.startSecondInnings(
       openingStrikerId: 'b1',
       openingNonStrikerId: 'b2',
@@ -76,6 +77,7 @@ void main() {
       scorerDeviceId: 'test',
       runsBatter: 5,
     );
+    engine.confirmMatchEnd();
     return engine;
   }
 

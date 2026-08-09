@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// The shared Cricket Scorer brand mark used across application surfaces.
+/// The shared TurfScore brand mark used across application surfaces.
 class BrandLogo extends StatelessWidget {
   const BrandLogo({super.key, this.size = 40});
 
@@ -12,7 +12,7 @@ class BrandLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       image: true,
-      label: 'Cricket Scorer logo',
+      label: 'TurfScore logo',
       child: Image.asset(
         assetPath,
         width: size,

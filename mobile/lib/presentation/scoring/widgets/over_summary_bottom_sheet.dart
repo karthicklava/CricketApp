@@ -7,12 +7,14 @@ class OverSummaryBottomSheet extends StatefulWidget {
   final MatchState matchState;
   final VoidCallback onSelectNextBowler;
   final VoidCallback onEndMatch;
+  final VoidCallback? onUndoLastBall;
 
   const OverSummaryBottomSheet({
     super.key,
     required this.matchState,
     required this.onSelectNextBowler,
     required this.onEndMatch,
+    this.onUndoLastBall,
   });
 
   @override
@@ -150,9 +152,26 @@ class _OverSummaryBottomSheetState extends State<OverSummaryBottomSheet> {
                   style: const TextStyle(fontSize: 13, color: Colors.grey)),
               const SizedBox(height: 24),
 
+              if (widget.onUndoLastBall != null) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    key: const ValueKey('over-summary-undo-last-ball'),
+                    icon: const Icon(Icons.undo),
+                    label: const Text('UNDO LAST BALL'),
+                    onPressed: () {
+                      setState(() => _allowPop = true);
+                      Navigator.pop(context);
+                      widget.onUndoLastBall!();
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: AppCtaStyle.height,
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primary,

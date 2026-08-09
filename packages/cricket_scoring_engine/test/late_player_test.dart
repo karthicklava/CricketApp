@@ -1,7 +1,8 @@
 import 'package:cricket_scoring_engine/cricket_scoring_engine.dart';
 import 'package:test/test.dart';
 
-CricketScoringEngine buildEngine({LatePlayerRules rules = const LatePlayerRules()}) {
+CricketScoringEngine buildEngine(
+    {LatePlayerRules rules = const LatePlayerRules()}) {
   return CricketScoringEngine.createMatch(
     matchId: 'late-match',
     config: MatchConfig(
@@ -56,12 +57,12 @@ void main() {
     );
 
     expect(engine.state.teamA.players.last.name, 'Late Batter');
-    expect(engine.state.activeInnings.totalRuns,
-        before.activeInnings.totalRuns);
+    expect(
+        engine.state.activeInnings.totalRuns, before.activeInnings.totalRuns);
     expect(engine.state.activeInnings.legalBallsBowled,
         before.activeInnings.legalBallsBowled);
-    expect(engine.state.activeInnings.strikerId,
-        before.activeInnings.strikerId);
+    expect(
+        engine.state.activeInnings.strikerId, before.activeInnings.strikerId);
     expect(engine.state.events, before.events);
   });
 

@@ -70,16 +70,19 @@ class PrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final button = ElevatedButton.icon(
-      onPressed: loading ? null : onPressed,
-      icon: loading
-          ? const SizedBox.square(
-              dimension: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : Icon(icon ?? Icons.arrow_forward_rounded, size: 20),
-      label: Text(label),
-    );
+    final effectiveOnPressed = loading ? null : onPressed;
+    final button = loading || icon != null
+        ? FilledButton.icon(
+            onPressed: effectiveOnPressed,
+            icon: loading
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(icon, size: AppCtaStyle.iconSize),
+            label: Text(label),
+          )
+        : FilledButton(onPressed: effectiveOnPressed, child: Text(label));
     return expanded ? SizedBox(width: double.infinity, child: button) : button;
   }
 }
@@ -89,6 +92,9 @@ class SecondaryButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final IconData? icon;
   final bool expanded;
+  final Color? foregroundColor;
+  final Color? backgroundColor;
+  final bool compact;
 
   const SecondaryButton({
     super.key,
@@ -96,15 +102,37 @@ class SecondaryButton extends StatelessWidget {
     required this.onPressed,
     this.icon,
     this.expanded = true,
+    this.foregroundColor,
+    this.backgroundColor,
+    this.compact = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final button = OutlinedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon ?? Icons.arrow_forward_rounded, size: 20),
-      label: Text(label),
-    );
+    final style = foregroundColor == null && backgroundColor == null && !compact
+        ? null
+        : OutlinedButton.styleFrom(
+            foregroundColor: foregroundColor,
+            backgroundColor: backgroundColor ?? Colors.white,
+            padding:
+                compact ? const EdgeInsets.symmetric(horizontal: 12) : null,
+            side: BorderSide(
+              color: foregroundColor ?? AppColors.primary,
+              width: 1.25,
+            ),
+          );
+    final button = icon == null
+        ? OutlinedButton(
+            onPressed: onPressed,
+            style: style,
+            child: Text(label),
+          )
+        : OutlinedButton.icon(
+            onPressed: onPressed,
+            style: style,
+            icon: Icon(icon, size: AppCtaStyle.iconSize),
+            label: Text(label),
+          );
     return expanded ? SizedBox(width: double.infinity, child: button) : button;
   }
 }

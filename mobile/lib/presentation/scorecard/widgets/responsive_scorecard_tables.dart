@@ -10,14 +10,12 @@ class ResponsiveBattingTable extends StatelessWidget {
     required this.didNotBat,
     required this.isCompleted,
     this.displayName,
-    this.playerDetail,
   });
 
   final List<BatterScorecard> rows;
   final List<BatterScorecard> didNotBat;
   final bool isCompleted;
   final String Function(String playerId, String playerName)? displayName;
-  final String Function(String playerId)? playerDetail;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -33,7 +31,6 @@ class ResponsiveBattingTable extends StatelessWidget {
                   tablet: tablet,
                   playerDisplayName:
                       displayName?.call(row.playerId, row.playerName),
-                  playerDetail: playerDetail?.call(row.playerId),
                 ),
               if (didNotBat.isNotEmpty)
                 DidNotBatRow(
@@ -58,12 +55,10 @@ class ResponsiveBowlingTable extends StatelessWidget {
     super.key,
     required this.rows,
     this.displayName,
-    this.playerDetail,
   });
 
   final List<BowlerScorecard> rows;
   final String Function(String playerId, String playerName)? displayName;
-  final String Function(String playerId)? playerDetail;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -79,7 +74,6 @@ class ResponsiveBowlingTable extends StatelessWidget {
                   compact: compact,
                   playerDisplayName:
                       displayName?.call(row.playerId, row.playerName),
-                  playerDetail: playerDetail?.call(row.playerId),
                 ),
             ],
           );
@@ -145,13 +139,11 @@ class BattingScorecardRow extends StatelessWidget {
       {super.key,
       required this.row,
       required this.tablet,
-      this.playerDisplayName,
-      this.playerDetail});
+      this.playerDisplayName});
 
   final BatterScorecard row;
   final bool tablet;
   final String? playerDisplayName;
-  final String? playerDetail;
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -173,11 +165,7 @@ class BattingScorecardRow extends StatelessWidget {
               child: _PlayerCell(
                 name:
                     '${playerDisplayName ?? row.playerName}${!row.isDismissed ? '*' : ''}',
-                detail: tablet
-                    ? playerDetail
-                    : [playerDetail, row.dismissalInfo]
-                        .where((value) => value?.isNotEmpty == true)
-                        .join(' · '),
+                detail: tablet ? null : row.dismissalInfo,
               ),
             ),
             if (tablet)
@@ -204,13 +192,11 @@ class BowlingScorecardRow extends StatelessWidget {
       {super.key,
       required this.row,
       this.compact = false,
-      this.playerDisplayName,
-      this.playerDetail});
+      this.playerDisplayName});
 
   final BowlerScorecard row;
   final bool compact;
   final String? playerDisplayName;
-  final String? playerDetail;
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -232,10 +218,7 @@ class BowlingScorecardRow extends StatelessWidget {
               flex: 10,
               child: _PlayerCell(
                 name: playerDisplayName ?? row.playerName,
-                detail: [
-                  playerDetail,
-                  'Wd ${row.wides} · Nb ${row.noBalls}',
-                ].where((value) => value?.isNotEmpty == true).join(' · '),
+                detail: 'Wd ${row.wides} · Nb ${row.noBalls}',
               ),
             ),
             _NumberCell(row.oversFormatted, flex: 2),

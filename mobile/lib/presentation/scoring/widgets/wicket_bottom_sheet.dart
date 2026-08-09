@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cricket_scoring_engine/cricket_scoring_engine.dart';
 import '../../../core/theme.dart';
+import '../../../core/utils/player_sorting.dart';
 
 class WicketBottomSheet extends StatefulWidget {
   final Player striker;
@@ -40,6 +41,7 @@ class _WicketBottomSheetState extends State<WicketBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final fielders = sortPlayersByName(widget.fieldingTeamPlayers);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: const BoxDecoration(
@@ -134,7 +136,7 @@ class _WicketBottomSheetState extends State<WicketBottomSheet> {
               DropdownButtonFormField<String>(
                 value: _selectedFielderId,
                 hint: const Text('Select Fielder'),
-                items: widget.fieldingTeamPlayers.map((p) {
+                items: fielders.map((p) {
                   return DropdownMenuItem(value: p.id, child: Text(p.name));
                 }).toList(),
                 onChanged: (val) => setState(() => _selectedFielderId = val),
@@ -164,7 +166,7 @@ class _WicketBottomSheetState extends State<WicketBottomSheet> {
 
             SizedBox(
               width: double.infinity,
-              height: 50,
+              height: AppCtaStyle.height,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.wicketRed,

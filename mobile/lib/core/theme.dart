@@ -31,6 +31,16 @@ class AppSpacing {
   static const double xl = 32;
 }
 
+class AppCtaStyle {
+  static const double height = 52;
+  static const double iconSize = 20;
+  static const double horizontalPadding = 24;
+  static const double elevation = 1;
+  static const OutlinedBorder shape = StadiumBorder();
+
+  const AppCtaStyle._();
+}
+
 class AppTheme {
   static ThemeData get lightTheme {
     final scheme = ColorScheme.fromSeed(
@@ -79,16 +89,35 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          elevation: 0,
+          elevation: AppCtaStyle.elevation,
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           disabledBackgroundColor: AppColors.outline,
           disabledForegroundColor: AppColors.textSecondary,
-          minimumSize: const Size(64, 50),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+          minimumSize: const Size(64, AppCtaStyle.height),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppCtaStyle.horizontalPadding,
           ),
+          iconSize: AppCtaStyle.iconSize,
+          shape: AppCtaStyle.shape,
+          textStyle: textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          elevation: AppCtaStyle.elevation,
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: AppColors.outline,
+          disabledForegroundColor: AppColors.textSecondary,
+          minimumSize: const Size(64, AppCtaStyle.height),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppCtaStyle.horizontalPadding,
+          ),
+          iconSize: AppCtaStyle.iconSize,
+          shape: AppCtaStyle.shape,
           textStyle: textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.w800,
           ),
@@ -97,12 +126,15 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.primary,
-          minimumSize: const Size(64, 50),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-          side: const BorderSide(color: AppColors.outline),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+          backgroundColor: Colors.white,
+          disabledForegroundColor: AppColors.textSecondary,
+          minimumSize: const Size(64, AppCtaStyle.height),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppCtaStyle.horizontalPadding,
           ),
+          iconSize: AppCtaStyle.iconSize,
+          side: const BorderSide(color: AppColors.primary, width: 1.25),
+          shape: AppCtaStyle.shape,
           textStyle: textTheme.labelLarge?.copyWith(
             fontWeight: FontWeight.w800,
           ),

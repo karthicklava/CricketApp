@@ -6,6 +6,7 @@ import 'package:cricket_scorer/presentation/scorecard/widgets/responsive_scoreca
 import 'package:cricket_scorer/presentation/common/widgets/live_match_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 const batting = Team(
   id: 'a',
@@ -63,6 +64,7 @@ CricketScoringEngine createCompletedChase() {
       dismissedPlayerId: 'a2',
     ),
   );
+  engine.confirmInningsEnd();
   engine.startSecondInnings(
     openingStrikerId: 'b1',
     openingNonStrikerId: 'b2',
@@ -73,6 +75,7 @@ CricketScoringEngine createCompletedChase() {
     scorerDeviceId: 'test',
     runsBatter: 1,
   );
+  engine.confirmMatchEnd();
   return engine;
 }
 
@@ -228,6 +231,77 @@ void main() {
     expect(find.descendant(of: header, matching: find.textContaining('RRR')),
         findsNothing);
     expect(find.textContaining('Balls remaining'), findsNothing);
+  });
+
+  testWidgets('completed full scorecard exposes both innings in order',
+      (tester) async {
+    final engine = createCompletedChase();
+
+    await tester.pumpWidget(app(engine));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(InningsScorecardSection), findsNWidgets(2));
+    final sections = tester
+        .widgetList<InningsScorecardSection>(
+          find.byType(InningsScorecardSection),
+        )
+        .toList();
+    expect(sections[0].inningsNumber, 1);
+    expect(sections[0].teamName, 'RAG');
+    expect(sections[0].score, '0/2');
+    expect(sections[1].inningsNumber, 2);
+    expect(sections[1].teamName, 'KAR');
+    expect(sections[1].score, '1/0');
+    expect(find.textContaining('1st Innings'), findsOneWidget);
+    expect(find.textContaining('2nd Innings'), findsWidgets);
+
+    expect(find.byType(ResponsiveBattingTable), findsOneWidget);
+    await tester.tap(find.text('RAG'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ResponsiveBattingTable), findsNWidgets(2));
+
+    expect(find.byType(InningsScorecardSection), findsNWidgets(2));
+  });
+
+  testWidgets('completed scorecard app and device back return to result',
+      (tester) async {
+    final engine = createCompletedChase();
+    final router = GoRouter(
+      initialLocation: '/result',
+      routes: [
+        GoRoute(
+          path: '/result',
+          builder: (context, state) => Scaffold(
+            body: Column(children: [
+              const Text('MATCH RESULT SCREEN'),
+              FilledButton(
+                onPressed: () => context.push('/scorecard'),
+                child: const Text('OPEN SCORECARD'),
+              ),
+            ]),
+          ),
+        ),
+        GoRoute(
+          path: '/scorecard',
+          builder: (context, state) => ScorecardScreen(engine: engine),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+
+    await tester.tap(find.text('OPEN SCORECARD'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ScorecardScreen), findsOneWidget);
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    expect(find.text('MATCH RESULT SCREEN'), findsOneWidget);
+
+    await tester.tap(find.text('OPEN SCORECARD'));
+    await tester.pumpAndSettle();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('MATCH RESULT SCREEN'), findsOneWidget);
   });
 
   testWidgets('live chase uses singular run and ball grammar', (tester) async {

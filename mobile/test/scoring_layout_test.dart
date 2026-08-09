@@ -72,6 +72,7 @@ void main() {
         runsBatter: ball == 0 ? 1 : 0,
       );
     }
+    engine.confirmInningsEnd();
     engine.startSecondInnings(
       openingStrikerId: 'b1',
       openingNonStrikerId: 'b2',
@@ -133,6 +134,58 @@ void main() {
     for (final label in ['0', '4', 'Wd', '1', 'Nb']) {
       expect(find.text(label), findsOneWidget);
     }
+  });
+
+  testWidgets('compact unified panel keeps over batters and bowler together',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 480);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final engine = CricketScoringEngine.createMatch(
+      matchId: 'compact-live-panel',
+      config: const MatchConfig(
+        format: MatchFormat.custom,
+        totalOvers: 2,
+        maxOversPerBowler: 2,
+      ),
+      teamA: batting,
+      teamB: bowling,
+      tossWinnerTeamId: 'a',
+      tossDecision: 'BAT',
+      openingStrikerId: 'a1',
+      openingNonStrikerId: 'a2',
+      openingBowlerId: 'b1',
+    );
+    engine.recordDelivery(
+      eventId: 'compact-ball',
+      scorerDeviceId: 'test',
+      runsBatter: 1,
+    );
+    final figures = const LiveFiguresService().calculate(engine.state);
+
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: ScoreSummaryCard(
+          matchState: engine.state,
+          syncStatusText: 'Saved',
+          isOnline: false,
+          compact: true,
+          liveFigures: figures,
+          onMorePressed: () {},
+        ),
+      ),
+    ));
+
+    expect(find.text('Current Over · 1'), findsOneWidget);
+    expect(find.text('BATTERS'), findsOneWidget);
+    expect(find.textContaining('A One'), findsOneWidget);
+    expect(find.textContaining('A Two'), findsOneWidget);
+    expect(find.text('CURRENT BOWLER'), findsOneWidget);
+    expect(find.textContaining('Arjun'), findsOneWidget);
+    expect(find.byType(SingleChildScrollView), findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('innings notation and active over number stay independent',

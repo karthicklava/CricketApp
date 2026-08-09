@@ -13,6 +13,7 @@ import 'data/repositories/completed_scorecard_repository.dart';
 import 'presentation/home/home_dashboard_state.dart';
 import 'presentation/home/home_dashboard_notifier.dart';
 import 'presentation/scoring/scoring_screen.dart';
+import 'presentation/scoring/widgets/match_result_view.dart';
 import 'presentation/scorecard/scorecard_screen.dart';
 import 'presentation/teams/create_team_screen.dart';
 import 'presentation/teams/teams_list_screen.dart';
@@ -31,6 +32,7 @@ import 'presentation/common/widgets/cricket_badge_widget.dart';
 import 'presentation/common/widgets/brand_logo.dart';
 import 'presentation/common/widgets/live_match_header.dart';
 import 'presentation/common/widgets/sports_ui.dart';
+import 'presentation/splash/turf_score_splash_screen.dart';
 
 // Global Providers
 final databaseProvider = Provider((ref) => AppDatabase());
@@ -60,10 +62,13 @@ class CricketApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
-      title: 'Cricket Scorer',
+      title: 'TurfScore',
       theme: AppTheme.lightTheme,
       routerConfig: _router(ref),
       debugShowCheckedModeBanner: false,
+      builder: (context, child) => TurfScoreStartupGate(
+        child: child ?? const SizedBox.shrink(),
+      ),
     );
   }
 }
@@ -153,6 +158,9 @@ GoRouter _router(WidgetRef ref) => GoRouter(
             final matchId = state.pathParameters['matchId']!;
             final matchState = state.extra as MatchState?;
             if (matchState != null) {
+              if (_isTerminalMatch(matchState)) {
+                return _terminalMatchScreen(matchState);
+              }
               final validation =
                   MatchDestinationResolver.validateLiveState(matchState);
               if (validation != null) {
@@ -169,14 +177,24 @@ GoRouter _router(WidgetRef ref) => GoRouter(
                   return const Scaffold(
                       body: Center(child: CircularProgressIndicator()));
                 }
-                final validation =
-                    MatchDestinationResolver.validateLiveState(snapshot.data);
-                if (snapshot.hasError || validation != null) {
+                if (snapshot.hasError || snapshot.data == null) {
                   return LiveMatchRecoveryScreen(
                     matchId: matchId,
                     reason: snapshot.hasError
                         ? snapshot.error.toString()
-                        : validation!,
+                        : 'The saved match state could not be found.',
+                  );
+                }
+                if (_isTerminalMatch(snapshot.data!)) {
+                  return _terminalMatchScreen(snapshot.data!);
+                }
+                final validation = MatchDestinationResolver.validateLiveState(
+                  snapshot.data,
+                );
+                if (validation != null) {
+                  return LiveMatchRecoveryScreen(
+                    matchId: matchId,
+                    reason: validation,
                   );
                 }
                 return LiveScoringScreen(
@@ -212,6 +230,9 @@ GoRouter _router(WidgetRef ref) => GoRouter(
                     if (!snap2.hasData) {
                       return const Scaffold(
                           body: Center(child: CircularProgressIndicator()));
+                    }
+                    if (_isTerminalMatch(snap2.data!)) {
+                      return _terminalMatchScreen(snap2.data!);
                     }
                     return LiveScoringScreen(
                         initialMatchState: snap2.data!, deviceId: 'device_123');
@@ -301,6 +322,17 @@ GoRouter _router(WidgetRef ref) => GoRouter(
       ],
     );
 
+bool _isTerminalMatch(MatchState state) =>
+    MatchDestinationResolver.isReadOnlyStatus(state.status);
+
+Widget _terminalMatchScreen(MatchState state) {
+  if (state.status == MatchStatus.completed) {
+    final engine = CricketScoringEngine(state);
+    return MatchResultView(matchState: state, engine: engine);
+  }
+  return CompletedMatchDetailsScreen(matchState: state);
+}
+
 class MainScaffold extends StatelessWidget {
   final Widget child;
   const MainScaffold({super.key, required this.child});
@@ -364,7 +396,7 @@ class WelcomeScreen extends ConsumerWidget {
                   size: 90, color: AppColors.primary),
               const SizedBox(height: 24),
               const Text(
-                'Welcome to Cricket Scorer',
+                'Welcome to TurfScore',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
@@ -382,8 +414,6 @@ class WelcomeScreen extends ConsumerWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: () => context.push('/teams/create'),
                   child: const Text('Create Your First Team',
@@ -442,7 +472,7 @@ class HomeScreen extends ConsumerWidget {
           children: [
             BrandLogo(size: 34),
             SizedBox(width: 10),
-            Text('Cricket Dashboard'),
+            Text('TurfScore'),
           ],
         ),
         actions: [
@@ -522,7 +552,7 @@ class HomeScreen extends ConsumerWidget {
                     const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
-                      height: 48,
+                      height: AppCtaStyle.height,
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
@@ -582,7 +612,7 @@ class HomeScreen extends ConsumerWidget {
                     child: _buildActionCard(
                       context,
                       title: 'Create Match',
-                      icon: Icons.sports_cricket,
+                      icon: Icons.stadium_rounded,
                       color: AppColors.primary,
                       onTap: () => context.push('/matches/create'),
                     ),
@@ -592,7 +622,7 @@ class HomeScreen extends ConsumerWidget {
                     child: _buildActionCard(
                       context,
                       title: 'Create Team',
-                      icon: Icons.group_add,
+                      icon: Icons.groups_3_rounded,
                       color: AppColors.accent,
                       onTap: () => context.push('/teams/create'),
                     ),
@@ -754,20 +784,24 @@ class HomeScreen extends ConsumerWidget {
       required IconData icon,
       required Color color,
       required VoidCallback onTap}) {
-    return AppCard(
-      onTap: onTap,
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-      child: Column(
-        children: [
-          CircleAvatar(
-              backgroundColor: color.withValues(alpha: 0.1),
-              radius: 24,
-              child: Icon(icon, color: color, size: 28)),
-          const SizedBox(height: 12),
-          Text(title,
-              style:
-                  const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-        ],
+    return Semantics(
+      button: true,
+      label: title,
+      child: AppCard(
+        onTap: onTap,
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+        child: Column(
+          children: [
+            CircleAvatar(
+                backgroundColor: color.withValues(alpha: 0.1),
+                radius: 24,
+                child: Icon(icon, color: color, size: 28)),
+            const SizedBox(height: 12),
+            Text(title,
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          ],
+        ),
       ),
     );
   }

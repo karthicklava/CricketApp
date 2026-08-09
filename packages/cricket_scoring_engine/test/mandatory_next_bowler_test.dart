@@ -194,6 +194,6 @@ void main() {
 
     expect(
         value.state.activeInnings.flowState, InningsFlowState.inningsCompleted);
-    expect(value.state.status, MatchStatus.inningsBreak);
+    expect(value.state.status, MatchStatus.inningsReview);
   });
 }

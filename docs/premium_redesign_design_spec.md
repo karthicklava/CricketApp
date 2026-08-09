@@ -1,4 +1,4 @@
-# Cricket Scorer — Premium Mobile Redesign Specification
+# TurfScore — Premium Mobile Redesign Specification
 
 Status: Proposed for approval  
 Product principle: fastest safe path from opening the app to recording the next ball  

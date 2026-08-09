@@ -1,11 +1,11 @@
-# Cricket Scorer — Current Implementation
+# TurfScore — Current Implementation
 
 Last reviewed: 2 August 2026  
 Scope: Flutter mobile application, Dart scoring engine, local persistence, synchronization prototype, and admin prototype.
 
 ## 1. Purpose
 
-Cricket Scorer is an offline-first cricket match scoring application. It supports team and squad management, ball-by-ball scoring, dynamic small-team rules, resumable live matches, completed scorecards, match awards, PDF export, and synchronization of locally recorded events.
+TurfScore is an offline-first cricket match scoring application. It supports team and squad management, ball-by-ball scoring, dynamic small-team rules, resumable live matches, completed scorecards, match awards, PDF export, and synchronization of locally recorded events.
 
 This document describes behavior present in the current repository. It is an implementation reference, not a future product specification.
 

@@ -43,4 +43,89 @@ void main() {
     expect(selectedId, 'a3');
     expect(find.text('SELECT NEXT BATTER'), findsNothing);
   });
+
+  testWidgets('next-batter transition exposes undo last ball', (tester) async {
+    var undone = false;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: NextBatterSelectionBottomSheet(
+          eligibleBatters: const [Player(id: 'a3', name: 'A3')],
+          onConfirmed: (_) async => true,
+          onUndoLastBall: () async {
+            undone = true;
+            return true;
+          },
+        ),
+      ),
+    ));
+
+    expect(find.text('UNDO LAST BALL'), findsOneWidget);
+    await tester.tap(find.text('UNDO LAST BALL'));
+    await tester.pump();
+    expect(undone, isTrue);
+  });
+
+  testWidgets('long batter list keeps confirm action visible on small screens',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final batters = List.generate(
+      20,
+      (index) => Player(id: 'p$index', name: 'Player ${index + 1}'),
+    );
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: NextBatterSelectionBottomSheet(
+          eligibleBatters: batters,
+          onConfirmed: (_) async => true,
+          onUndoLastBall: () async => true,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('next-batter-scrollable-list')),
+        findsOneWidget);
+    expect(find.byKey(const ValueKey('next-batter-sticky-footer')),
+        findsOneWidget);
+    expect(find.text('CONFIRM BATTER'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    final confirmButton = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'CONFIRM BATTER'),
+    );
+    expect(confirmButton.onPressed, isNull);
+
+    await tester.tap(find.text('Player 1'));
+    await tester.pump();
+    final enabledButton = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'CONFIRM BATTER'),
+    );
+    expect(enabledButton.onPressed, isNotNull);
+  });
+
+  testWidgets('search filters the independently scrollable batter list',
+      (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: NextBatterSelectionBottomSheet(
+          eligibleBatters: const [
+            Player(id: 'a3', name: 'Karthick'),
+            Player(id: 'a4', name: 'Ragu'),
+          ],
+          onConfirmed: (_) async => true,
+        ),
+      ),
+    ));
+
+    await tester.enterText(
+        find.byKey(const ValueKey('next-batter-search')), 'rag');
+    await tester.pump();
+
+    expect(find.text('Ragu'), findsOneWidget);
+    expect(find.text('Karthick'), findsNothing);
+  });
 }

@@ -812,6 +812,7 @@ class CricketScoringEngine {
       InningsCompletionReason.targetReached => 'Target Achieved',
       _ => null,
     };
+    final shouldAdvanceToNextOver = isEndOfOver && !isInningsDone;
     updatedInnings = updatedInnings.copyWith(
       isCompleted: isInningsDone,
       completionReason: completionReason,
@@ -822,11 +823,13 @@ class CricketScoringEngine {
               : isEndOfOver
                   ? InningsFlowState.awaitingNextBowler
                   : InningsFlowState.scoring),
-      previousBowlerId: isEndOfOver ? activeInnings.currentBowlerId : null,
-      previousOverBowlerId: isEndOfOver ? activeInnings.currentBowlerId : null,
-      clearCurrentBowler: isEndOfOver,
-      clearActiveOver: isEndOfOver,
-      nextOverNumber: isEndOfOver
+      previousBowlerId:
+          shouldAdvanceToNextOver ? activeInnings.currentBowlerId : null,
+      previousOverBowlerId:
+          shouldAdvanceToNextOver ? activeInnings.currentBowlerId : null,
+      clearCurrentBowler: shouldAdvanceToNextOver,
+      clearActiveOver: shouldAdvanceToNextOver,
+      nextOverNumber: shouldAdvanceToNextOver
           ? newLegalBalls ~/ _state.config.ballsPerOver
           : activeInnings.nextOverNumber,
     );
@@ -848,10 +851,12 @@ class CricketScoringEngine {
     final updatedInningsList = List<InningsState>.from(_state.innings);
     updatedInningsList[_state.currentInningsIndex] = updatedInnings;
 
-    // Transition match status to inningsBreak if 1st innings finishes
+    // Natural completion remains provisional until the scorer confirms it.
     MatchStatus matchStatus = _state.status;
     if (isInningsDone && _state.currentInningsIndex == 0) {
-      matchStatus = MatchStatus.inningsBreak;
+      matchStatus = MatchStatus.inningsReview;
+    } else if (isInningsDone && _state.currentInningsIndex == 1) {
+      matchStatus = MatchStatus.matchReview;
     }
 
     _state = _state.copyWith(
@@ -863,12 +868,27 @@ class CricketScoringEngine {
 
     _undoStack.clear();
 
-    // Check Match Completion (if 2nd innings finished or target reached)
-    if (_state.currentInningsIndex == 1 && isInningsDone) {
-      _checkMatchCompletion();
-    }
-
     return event;
+  }
+
+  /// Confirms the provisional first innings and permits chase setup.
+  void confirmInningsEnd() {
+    if (_state.status != MatchStatus.inningsReview ||
+        _state.currentInningsIndex != 0 ||
+        !_state.activeInnings.isCompleted) {
+      throw StateError('The first innings is not awaiting confirmation.');
+    }
+    _state = _state.copyWith(status: MatchStatus.inningsBreak);
+  }
+
+  /// Confirms the provisional winning/final delivery and finalizes the match.
+  void confirmMatchEnd() {
+    if (_state.status != MatchStatus.matchReview ||
+        _state.currentInningsIndex != 1 ||
+        !_state.activeInnings.isCompleted) {
+      throw StateError('The match is not awaiting confirmation.');
+    }
+    _checkMatchCompletion();
   }
 
   /// Starts the second innings with target set from 1st innings
@@ -877,9 +897,11 @@ class CricketScoringEngine {
     required String openingNonStrikerId,
     required String openingBowlerId,
   }) {
-    if (_state.innings.isEmpty || !_state.innings[0].isCompleted) {
+    if (_state.status != MatchStatus.inningsBreak ||
+        _state.innings.isEmpty ||
+        !_state.innings[0].isCompleted) {
       throw StateError(
-        'Cannot start second innings before first innings completes.',
+        'Confirm the first innings before starting the second innings.',
       );
     }
 

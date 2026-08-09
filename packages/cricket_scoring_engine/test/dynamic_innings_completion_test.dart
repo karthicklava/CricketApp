@@ -78,7 +78,7 @@ void main() {
       expect(engine.state.activeInnings.totalWickets, 2);
       expect(engine.state.activeInnings.isCompleted, isTrue);
       expect(engine.state.activeInnings.completionReason, 'All Out');
-      expect(engine.state.status, MatchStatus.inningsBreak);
+      expect(engine.state.status, MatchStatus.inningsReview);
       expect(
         () => engine.recordDelivery(eventId: 'illegal', scorerDeviceId: 'test'),
         throwsStateError,
@@ -114,6 +114,7 @@ void main() {
       final engine = _engine();
       _dismiss(engine, 'a1', 'ap0', newBatterId: 'ap2', runs: 20);
       _dismiss(engine, 'a2', 'ap1');
+      engine.confirmInningsEnd();
       engine.startSecondInnings(
         openingStrikerId: 'bp0',
         openingNonStrikerId: 'bp1',
@@ -126,6 +127,8 @@ void main() {
       final engine = firstInningsFor20();
       _dismiss(engine, 'b1', 'bp0', newBatterId: 'bp2', runs: 15);
       _dismiss(engine, 'b2', 'bp1');
+      expect(engine.state.status, MatchStatus.matchReview);
+      engine.confirmMatchEnd();
 
       expect(engine.state.status, MatchStatus.completed);
       expect(engine.state.result!.winnerTeamId, 'a');
@@ -141,6 +144,8 @@ void main() {
         scorerDeviceId: 'test',
         runsBatter: 21,
       );
+      expect(engine.state.status, MatchStatus.matchReview);
+      engine.confirmMatchEnd();
 
       expect(engine.state.status, MatchStatus.completed);
       expect(engine.state.result!.winByWickets, 1);
@@ -165,6 +170,8 @@ void main() {
       expect(winningWide.displayLabel, 'Wd');
       expect(engine.state.activeInnings.totalRuns, 21);
       expect(engine.state.activeInnings.legalBallsBowled, 1);
+      expect(engine.state.status, MatchStatus.matchReview);
+      engine.confirmMatchEnd();
       expect(engine.state.status, MatchStatus.completed);
       expect(engine.state.result!.winnerTeamId, 'b');
 
@@ -179,6 +186,7 @@ void main() {
       final engine = firstInningsFor20();
       _dismiss(engine, 'b1', 'bp0', newBatterId: 'bp2', runs: 20);
       _dismiss(engine, 'b2', 'bp1');
+      engine.confirmMatchEnd();
       expect(engine.state.result!.isTie, isTrue);
       expect(engine.state.result!.resultString, 'Match Tied');
     });
@@ -187,7 +195,7 @@ void main() {
       final engine = firstInningsFor20();
       _dismiss(engine, 'b1', 'bp0', newBatterId: 'bp2', runs: 15);
       _dismiss(engine, 'b2', 'bp1');
-      expect(engine.state.status, MatchStatus.completed);
+      expect(engine.state.status, MatchStatus.matchReview);
 
       engine.undoLastDelivery();
       expect(engine.state.status, MatchStatus.live);
@@ -195,6 +203,7 @@ void main() {
       expect(engine.state.activeInnings.totalWickets, 1);
 
       _dismiss(engine, 'b2-again', 'bp1');
+      engine.confirmMatchEnd();
       expect(engine.state.status, MatchStatus.completed);
       expect(engine.state.result!.winByRuns, 5);
     });
@@ -203,6 +212,7 @@ void main() {
       final engine = firstInningsFor20();
       _dismiss(engine, 'b1', 'bp0', newBatterId: 'bp2', runs: 15);
       _dismiss(engine, 'b2', 'bp1');
+      engine.confirmMatchEnd();
 
       final resumed = CricketScoringEngine(
         MatchState.fromJson(engine.state.toJson()),

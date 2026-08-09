@@ -21,6 +21,7 @@ enum LiveMatchCardVariant {
   historyCompact,
   scorecardHeader,
   liveScoreHeader,
+  liveScoringCompact,
 }
 
 enum MatchConnectionState { online, savedOffline }
@@ -124,7 +125,9 @@ class LiveMatchSummaryCard extends StatelessWidget {
   final bool darkSurface;
   final VoidCallback? onResume;
 
-  bool get _compact => variant == LiveMatchCardVariant.historyCompact;
+  bool get _compact =>
+      variant == LiveMatchCardVariant.historyCompact ||
+      variant == LiveMatchCardVariant.liveScoringCompact;
   String get _inningsLabel => switch (inningsNumber) {
         1 => '1st Innings',
         2 => '2nd Innings',
@@ -150,41 +153,61 @@ class LiveMatchSummaryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(children: [
-            Expanded(
-              child: Text(isCompleted ? 'COMPLETED' : 'LIVE MATCH',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      color: isCompleted ? secondary : const Color(0xFFFF7A72),
-                      fontSize: _compact ? 10 : 11,
-                      letterSpacing: .8,
-                      fontWeight: FontWeight.w900)),
+          if (isCompleted)
+            Text('COMPLETED',
+                style: TextStyle(
+                    color: secondary,
+                    fontSize: 11,
+                    letterSpacing: .8,
+                    fontWeight: FontWeight.w900))
+          else
+            Row(
+              key: const ValueKey('live-summary-header-row'),
+              children: [
+                const LiveMatchStatusBadge(),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Align(
+                    key: const ValueKey('live-summary-header-meta'),
+                    alignment: Alignment.centerRight,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _inningsLabel,
+                            maxLines: 1,
+                            style: TextStyle(
+                              color: primary,
+                              fontSize: _compact ? 11 : 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(width: 7),
+                          Icon(
+                            connectionState == MatchConnectionState.online
+                                ? Icons.cloud_done_outlined
+                                : Icons.cloud_off_outlined,
+                            size: 15,
+                            color: secondary,
+                          ),
+                          if (connectionState ==
+                              MatchConnectionState.savedOffline) ...[
+                            const SizedBox(width: 4),
+                            Text(
+                              'Saved offline',
+                              style: TextStyle(color: secondary, fontSize: 10),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            if (!isCompleted)
-              Flexible(
-                child: Text(_inningsLabel,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                        color: secondary,
-                        fontSize: _compact ? 11 : 12,
-                        fontWeight: FontWeight.w700)),
-              ),
-            if (!isCompleted) const SizedBox(width: 10),
-            Icon(
-              connectionState == MatchConnectionState.online
-                  ? Icons.cloud_done_outlined
-                  : Icons.cloud_off_outlined,
-              size: 14,
-              color: secondary,
-            ),
-            if (connectionState == MatchConnectionState.savedOffline) ...[
-              const SizedBox(width: 4),
-              Text('Saved offline',
-                  style: TextStyle(color: secondary, fontSize: 10)),
-            ],
-          ]),
           SizedBox(height: _compact ? 8 : 10),
           Text(isCompleted ? battingTeamName : '$battingTeamName batting',
               key: const ValueKey('live-summary-batting-team'),
@@ -287,7 +310,7 @@ class LiveMatchSummaryCard extends StatelessWidget {
           if (onResume != null) ...[
             const SizedBox(height: 12),
             SizedBox(
-              height: 42,
+              height: AppCtaStyle.height,
               child: FilledButton.icon(
                 style: FilledButton.styleFrom(
                     backgroundColor: Colors.white,
@@ -302,6 +325,78 @@ class LiveMatchSummaryCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class LiveMatchStatusBadge extends StatefulWidget {
+  const LiveMatchStatusBadge({super.key});
+
+  @override
+  State<LiveMatchStatusBadge> createState() => _LiveMatchStatusBadgeState();
+}
+
+class _LiveMatchStatusBadgeState extends State<LiveMatchStatusBadge>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..forward();
+  late final Animation<double> _opacity =
+      Tween<double>(begin: .45, end: 1).animate(
+    CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        label: 'Live match',
+        child: Container(
+          key: const ValueKey('live-match-status-badge'),
+          height: 26,
+          padding: const EdgeInsets.symmetric(horizontal: 9),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE53935),
+            borderRadius: BorderRadius.circular(999),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x33000000),
+                blurRadius: 5,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FadeTransition(
+                opacity: _opacity,
+                child: Container(
+                  width: 7,
+                  height: 7,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Text(
+                'LIVE MATCH',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  letterSpacing: .45,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
 }
 
 class ScorecardMatchHeader extends StatelessWidget {

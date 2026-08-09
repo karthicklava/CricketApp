@@ -636,7 +636,7 @@ class _AddPlayersScreenState extends ConsumerState<AddPlayersScreen> {
 
                     SizedBox(
                       width: double.infinity,
-                      height: 46,
+                      height: AppCtaStyle.height,
                       child: ElevatedButton.icon(
                         icon: Icon(_editingPlayerId != null
                             ? Icons.save

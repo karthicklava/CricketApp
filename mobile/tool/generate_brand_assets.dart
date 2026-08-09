@@ -4,22 +4,28 @@ import 'dart:math' as math;
 import 'package:image/image.dart' as img;
 
 void main() {
+  // Default-brand master: a cricket-first shield with a hero-sized diagonal
+  // bat and ball. Jersey variants intentionally use their separate numbered
+  // shield template and are not modified by this generator.
   final sourceFile = File('assets/branding/cricket_scorer_mark_chroma.png');
   final decoded = img.decodePng(sourceFile.readAsBytesSync());
-  if (decoded == null) throw StateError('Unable to decode generated logo.');
+  if (decoded == null) throw StateError('Unable to decode brand master.');
+  if (decoded.width < 1024 || decoded.height < 1024) {
+    throw StateError('Brand master must be at least 1024 x 1024.');
+  }
 
-  final transparent = _removeMagenta(decoded);
   final masterMark = img.copyResize(
-    transparent,
+    _removeMagenta(decoded),
     width: 1024,
     height: 1024,
-    interpolation: img.Interpolation.cubic,
+    interpolation: img.Interpolation.average,
   );
   _writePng('assets/branding/cricket_scorer_mark.png', masterMark);
   _writePng('assets/branding/cricket_scorer_mark_1024.png', masterMark);
 
   final masterIcon = _launcher(1024, masterMark, markScale: .82);
   _writePng('assets/branding/cricket_scorer_icon_1024.png', masterIcon);
+  _writePng('assets/branding/launcher_icon_master.png', masterIcon);
 
   const androidSizes = {
     'mdpi': 48,
@@ -57,7 +63,7 @@ void main() {
   }
   _writePng(
     'android/app/src/main/res/drawable-nodpi/brand_splash_logo.png',
-    _transparentLayer(192, masterMark, markScale: .80),
+    _transparentLayer(1024, masterMark, markScale: .80),
   );
 
   const launchSizes = {

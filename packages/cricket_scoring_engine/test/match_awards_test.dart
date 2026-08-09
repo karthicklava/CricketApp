@@ -131,7 +131,8 @@ void main() {
     expect(service.calculateAwards(state).bestBatter!.playerId, 'a2');
   });
 
-  test('DNB player is excluded and a late batter is eligible after batting', () {
+  test('DNB player is excluded and a late batter is eligible after batting',
+      () {
     final lateTeam = Team(
       id: teamA.id,
       name: teamA.name,
@@ -217,11 +218,7 @@ void main() {
   test('abandoned or active matches do not generate awards', () {
     final state = completed([
       ball(
-          id: '1',
-          innings: 'i1',
-          striker: 'a1',
-          nonStriker: 'a2',
-          bowler: 'b1')
+          id: '1', innings: 'i1', striker: 'a1', nonStriker: 'a2', bowler: 'b1')
     ]).copyWith(status: MatchStatus.abandoned);
     expect(service.calculateAwards(state).awards, isEmpty);
   });

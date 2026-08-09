@@ -1,11 +1,11 @@
 {
-    "name": "cricket_scorer",
-    "short_name": "cricket_scorer",
+    "name": "TurfScore",
+    "short_name": "TurfScore",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Offline-first cricket scoring for local matches.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

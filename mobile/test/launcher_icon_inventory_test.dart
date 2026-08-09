@@ -32,12 +32,18 @@ void main() {
       expect(manifest, contains('android:icon="@mipmap/jersey_$number"'));
       expect(plist, contains('<key>Jersey$number</key>'));
       for (final density in densities) {
-        expect(File('android/app/src/main/res/mipmap-$density/jersey_$number.png')
-            .existsSync(), isTrue);
-        expect(File('android/app/src/main/res/drawable-$density/jersey_${number}_foreground.png')
-            .existsSync(), isTrue);
-        expect(File('android/app/src/main/res/drawable-$density/jersey_${number}_monochrome.png')
-            .existsSync(), isTrue);
+        expect(
+            File('android/app/src/main/res/mipmap-$density/jersey_$number.png')
+                .existsSync(),
+            isTrue);
+        expect(
+            File('android/app/src/main/res/drawable-$density/jersey_${number}_foreground.png')
+                .existsSync(),
+            isTrue);
+        expect(
+            File('android/app/src/main/res/drawable-$density/jersey_${number}_monochrome.png')
+                .existsSync(),
+            isTrue);
       }
       final iosSet =
           Directory('ios/Runner/Assets.xcassets/Jersey$number.appiconset');
@@ -49,16 +55,19 @@ void main() {
         expect(decoded.height, expected.value);
       }
     }
-    expect(RegExp(r'MainActivityJersey\d+').allMatches(manifest), hasLength(99));
+    expect(
+        RegExp(r'MainActivityJersey\d+').allMatches(manifest), hasLength(99));
     expect(RegExp('android:enabled="true"').allMatches(manifest), hasLength(1));
-    expect(RegExp('android:enabled="false"').allMatches(manifest), hasLength(99));
+    expect(
+        RegExp('android:enabled="false"').allMatches(manifest), hasLength(99));
     expect(manifest, isNot(contains('MainActivityJersey0')));
     expect(manifest, isNot(contains('MainActivityJersey100')));
     expect(plist, isNot(contains('<key>Jersey0</key>')));
     expect(plist, isNot(contains('<key>Jersey100</key>')));
   });
 
-  test('adaptive foreground is transparent, safe, and separate from preview', () {
+  test('adaptive foreground is transparent, safe, and separate from preview',
+      () {
     final foregroundFile = File(
         'android/app/src/main/res/drawable-xxxhdpi/jersey_18_foreground.png');
     final foreground = img.decodePng(foregroundFile.readAsBytesSync())!;
@@ -66,13 +75,17 @@ void main() {
     expect(foreground.width, 432);
     expect(foreground.height, 432);
     expect(foreground.getPixel(0, 0).a, 0);
+    final previewImage = img.decodePng(preview.readAsBytesSync())!;
+    expect((previewImage.width, previewImage.height), (512, 512));
     final unsafePixels = foreground.where((pixel) =>
         pixel.a > 12 &&
         (pixel.x < 52 || pixel.y < 52 || pixel.x >= 380 || pixel.y >= 380));
     expect(unsafePixels, isEmpty);
     expect(preview.path, isNot(foregroundFile.path));
-    expect(File('android/app/src/main/res/mipmap-anydpi-v26/jersey_18.xml')
-        .readAsStringSync(), contains('@drawable/jersey_18_monochrome'));
+    expect(
+        File('android/app/src/main/res/mipmap-anydpi-v26/jersey_18.xml')
+            .readAsStringSync(),
+        contains('@drawable/jersey_18_monochrome'));
   });
 
   test('native mappings use the same normalized names', () {

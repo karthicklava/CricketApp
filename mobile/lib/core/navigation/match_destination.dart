@@ -11,6 +11,12 @@ enum MatchDestination {
 class MatchDestinationResolver {
   const MatchDestinationResolver._();
 
+  static bool isReadOnlyStatus(MatchStatus status) =>
+      status == MatchStatus.completed ||
+      status == MatchStatus.abandoned ||
+      status == MatchStatus.noResult ||
+      status == MatchStatus.cancelled;
+
   static MatchDestination resolveStatus(String rawStatus) {
     switch (rawStatus.trim().toLowerCase()) {
       case 'live':
@@ -32,6 +38,10 @@ class MatchDestinationResolver {
       case 'paused':
       case 'resultpending':
       case 'result_pending':
+      case 'inningsreview':
+      case 'innings_review':
+      case 'matchreview':
+      case 'match_review':
         return MatchDestination.liveScoring;
       case 'inningsbreak':
       case 'innings_break':
@@ -85,6 +95,8 @@ class MatchDestinationResolver {
   static String? validateLiveState(MatchState? state) {
     if (state == null) return 'The saved live match state could not be found.';
     if (state.status != MatchStatus.live &&
+        state.status != MatchStatus.inningsReview &&
+        state.status != MatchStatus.matchReview &&
         state.status != MatchStatus.inningsBreak) {
       return 'This match is not in a resumable live state.';
     }

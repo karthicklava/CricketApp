@@ -712,7 +712,15 @@ class MatchRepository {
     }
 
     MatchStatus status = MatchStatus.live;
+    if (m.status == 'inningsReview' ||
+        engine.state.status == MatchStatus.inningsReview) {
+      status = MatchStatus.inningsReview;
+    }
     if (m.status == 'inningsBreak') status = MatchStatus.inningsBreak;
+    if (m.status == 'matchReview' ||
+        engine.state.status == MatchStatus.matchReview) {
+      status = MatchStatus.matchReview;
+    }
     if (m.status == 'completed' || engine.state.status == MatchStatus.completed)
       status = MatchStatus.completed;
 

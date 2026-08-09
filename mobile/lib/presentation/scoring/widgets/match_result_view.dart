@@ -10,11 +10,13 @@ import '../../../data/repositories/match_repository.dart';
 class MatchResultView extends ConsumerWidget {
   final MatchState matchState;
   final CricketScoringEngine engine;
+  final Future<bool> Function()? onUndoLastBall;
 
   const MatchResultView({
     super.key,
     required this.matchState,
     required this.engine,
+    this.onUndoLastBall,
   });
 
   @override
@@ -47,32 +49,14 @@ class MatchResultView extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.all(24.0),
           children: [
-            const CircleAvatar(
-              radius: 44,
-              backgroundColor: AppColors.accent,
-              child: Icon(Icons.emoji_events, size: 54, color: Colors.white),
+            VictoryHeroBanner(
+              result: res,
+              resultText: resultText,
+              teamA: matchState.teamA,
+              teamB: matchState.teamB,
+              manuallyEnded: manuallyEnded,
             ),
             const SizedBox(height: 20),
-
-            Text(
-              manuallyEnded ? 'MATCH ENDED' : 'MATCH COMPLETE',
-              style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey,
-                  letterSpacing: 1.2),
-            ),
-            const SizedBox(height: 8),
-
-            Text(
-              resultText,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary),
-            ),
-            const SizedBox(height: 32),
 
             if (manuallyEnded) ...[
               Text(
@@ -135,6 +119,16 @@ class MatchResultView extends ConsumerWidget {
               ),
             const SizedBox(height: 24),
 
+            if (!manuallyEnded && onUndoLastBall != null) ...[
+              OutlinedButton.icon(
+                key: const ValueKey('match-result-undo-last-ball'),
+                icon: const Icon(Icons.undo),
+                label: const Text('UNDO LAST BALL'),
+                onPressed: onUndoLastBall,
+              ),
+              const SizedBox(height: 12),
+            ],
+
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -142,8 +136,6 @@ class MatchResultView extends ConsumerWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
                 ),
                 icon: const Icon(Icons.home),
                 label: const Text('RETURN HOME',
@@ -156,9 +148,7 @@ class MatchResultView extends ConsumerWidget {
 
             OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 48),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                minimumSize: const Size(double.infinity, AppCtaStyle.height),
               ),
               icon: const Icon(Icons.assessment),
               label: const Text('VIEW FULL SCORECARD'),
@@ -194,7 +184,7 @@ class MatchResultView extends ConsumerWidget {
                   return '${team.name} — ${innings.totalRuns}/${innings.totalWickets} in ${innings.oversFormatted} overs';
                 }).join('\n');
                 Share.share(
-                  '${matchState.teamA.name} vs ${matchState.teamB.name}\n\n$resultText\n\n${captainLine(matchState.teamA)}\n${captainLine(matchState.teamB)}\n\nScore at match end:\n$scores\n\nFull scorecard available in Cricket Scorer.',
+                  '${matchState.teamA.name} vs ${matchState.teamB.name}\n\n$resultText\n\n${captainLine(matchState.teamA)}\n${captainLine(matchState.teamB)}\n\nScore at match end:\n$scores\n\nFull scorecard available in TurfScore.',
                 );
               },
             ),
@@ -271,4 +261,327 @@ class MatchResultView extends ConsumerWidget {
       }
     }
   }
+}
+
+class VictoryHeroBanner extends StatefulWidget {
+  const VictoryHeroBanner({
+    super.key,
+    required this.result,
+    required this.resultText,
+    required this.teamA,
+    required this.teamB,
+    required this.manuallyEnded,
+  });
+
+  final MatchResult? result;
+  final String resultText;
+  final Team teamA;
+  final Team teamB;
+  final bool manuallyEnded;
+
+  @override
+  State<VictoryHeroBanner> createState() => _VictoryHeroBannerState();
+}
+
+class _VictoryHeroBannerState extends State<VictoryHeroBanner>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  );
+  late final Animation<double> _heroScale = CurvedAnimation(
+    parent: _controller,
+    curve: Curves.elasticOut,
+  );
+
+  bool get _isTie =>
+      widget.result?.isTie == true ||
+      widget.resultText.toLowerCase().contains('tied');
+
+  Team? get _winner {
+    final winnerId = widget.result?.winnerTeamId;
+    if (winnerId == widget.teamA.id) return widget.teamA;
+    if (winnerId == widget.teamB.id) return widget.teamB;
+    return null;
+  }
+
+  String get _marginText {
+    final result = widget.result;
+    if (_isTie) return 'MATCH TIED';
+    if (result != null && result.winByRuns > 0) {
+      return 'WON BY ${result.winByRuns} ${result.winByRuns == 1 ? 'RUN' : 'RUNS'}';
+    }
+    if (result != null && result.winByWickets > 0) {
+      return 'WON BY ${result.winByWickets} ${result.winByWickets == 1 ? 'WICKET' : 'WICKETS'}';
+    }
+    return widget.resultText.toUpperCase();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final winner = _winner;
+    final isNeutral = widget.manuallyEnded || winner == null;
+    final badge = widget.manuallyEnded
+        ? 'FINAL RESULT'
+        : _isTie
+            ? 'FINAL RESULT'
+            : 'MATCH COMPLETE';
+
+    return Semantics(
+      container: true,
+      label: _isTie
+          ? 'Final result. Match tied.'
+          : winner == null
+              ? 'Final result. ${widget.resultText}'
+              : 'Match complete. ${widget.resultText}',
+      child: Container(
+        key: const ValueKey('victory-hero-banner'),
+        constraints: const BoxConstraints(minHeight: 300),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(26),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF063D2E), Color(0xFF0B6E4F)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x3307513B),
+              blurRadius: 22,
+              offset: Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            _ResultBadge(label: badge, isTie: _isTie),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 142,
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, child) => CustomPaint(
+                  painter: _CelebrationPainter(
+                    progress: _controller.value,
+                    isTie: _isTie || isNeutral,
+                  ),
+                  child: Center(
+                    child: ScaleTransition(
+                      scale: _heroScale,
+                      child: _isTie
+                          ? const _TieIllustration()
+                          : isNeutral
+                              ? const _FinalResultIllustration()
+                              : const _GoldTrophyIllustration(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            if (winner != null && !_isTie) ...[
+              Text(
+                winner.name,
+                key: const ValueKey('victory-team-name'),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 27,
+                  height: 1.05,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -.5,
+                ),
+              ),
+              const SizedBox(height: 6),
+            ],
+            Text(
+              _marginText,
+              key: const ValueKey('victory-result-margin'),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color:
+                    _isTie ? const Color(0xFFE8F4FF) : const Color(0xFFFFD66B),
+                fontSize: winner == null ? 17 : 15,
+                fontWeight: FontWeight.w900,
+                letterSpacing: winner == null ? .2 : 1.1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ResultBadge extends StatelessWidget {
+  const _ResultBadge({required this.label, required this.isTie});
+
+  final String label;
+  final bool isTie;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: .12),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: Colors.white.withValues(alpha: .24)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isTie ? Icons.balance_rounded : Icons.emoji_events_rounded,
+              color: isTie ? const Color(0xFFDCEEFF) : const Color(0xFFFFD66B),
+              size: 16,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                letterSpacing: 1,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+class _GoldTrophyIllustration extends StatelessWidget {
+  const _GoldTrophyIllustration();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        key: const ValueKey('gold-trophy-illustration'),
+        width: 116,
+        height: 116,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [Color(0x66FFD66B), Color(0x11FFD66B), Colors.transparent],
+            stops: [0, .62, 1],
+          ),
+        ),
+        child: ShaderMask(
+          blendMode: BlendMode.srcIn,
+          shaderCallback: (bounds) => const LinearGradient(
+            colors: [Color(0xFFFFF3B0), Color(0xFFFFC337), Color(0xFFCE8500)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ).createShader(bounds),
+          child: const Icon(Icons.emoji_events_rounded, size: 88),
+        ),
+      );
+}
+
+class _TieIllustration extends StatelessWidget {
+  const _TieIllustration();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        key: const ValueKey('tie-result-illustration'),
+        width: 108,
+        height: 108,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [Color(0x665EB5F7), Color(0x115EB5F7), Colors.transparent],
+          ),
+        ),
+        child: const Icon(
+          Icons.balance_rounded,
+          size: 72,
+          color: Color(0xFFDCEEFF),
+        ),
+      );
+}
+
+class _FinalResultIllustration extends StatelessWidget {
+  const _FinalResultIllustration();
+
+  @override
+  Widget build(BuildContext context) => Container(
+        key: const ValueKey('neutral-result-illustration'),
+        width: 104,
+        height: 104,
+        decoration: const BoxDecoration(
+          color: Color(0x1FFFFFFF),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(Icons.sports_score_rounded,
+            size: 66, color: Colors.white),
+      );
+}
+
+class _CelebrationPainter extends CustomPainter {
+  const _CelebrationPainter({required this.progress, required this.isTie});
+
+  final double progress;
+  final bool isTie;
+
+  static const _particles = <(Offset, double)>[
+    (Offset(.12, .28), 4),
+    (Offset(.22, .68), 3),
+    (Offset(.34, .14), 3),
+    (Offset(.68, .12), 4),
+    (Offset(.79, .64), 3),
+    (Offset(.89, .30), 4),
+    (Offset(.08, .52), 2.5),
+    (Offset(.93, .55), 2.5),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final opacity = progress.clamp(0, 1).toDouble();
+    final colors = isTie
+        ? const [Color(0xFFDCEEFF), Color(0xFF8CC8FF)]
+        : const [Color(0xFFFFD66B), Color(0xFFFFF2B2)];
+    for (var index = 0; index < _particles.length; index++) {
+      final particle = _particles[index];
+      final center = Offset(
+        particle.$1.dx * size.width,
+        particle.$1.dy * size.height - (1 - progress) * 8,
+      );
+      final paint = Paint()
+        ..color = colors[index % colors.length].withValues(alpha: opacity)
+        ..style = PaintingStyle.fill;
+      if (index.isEven) {
+        canvas.drawCircle(center, particle.$2, paint);
+      } else {
+        canvas.save();
+        canvas.translate(center.dx, center.dy);
+        canvas.rotate(progress * .7);
+        canvas.drawRect(
+          Rect.fromCenter(
+            center: Offset.zero,
+            width: particle.$2 * 1.4,
+            height: particle.$2 * 3,
+          ),
+          paint,
+        );
+        canvas.restore();
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _CelebrationPainter oldDelegate) =>
+      oldDelegate.progress != progress || oldDelegate.isTie != isTie;
 }

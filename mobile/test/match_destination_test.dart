@@ -64,11 +64,13 @@ void main() {
       'setupCompleted',
       'tossCompleted',
       'live',
+      'inningsReview',
       'inProgress',
       'awaitingNextBatter',
       'awaitingNextBowler',
       'secondInningsSetup',
       'resultPending',
+      'matchReview',
       'paused',
       'secondInnings',
     ]) {
@@ -84,6 +86,19 @@ void main() {
         '/matches/selected/scoring',
       );
     }
+  });
+
+  test('terminal statuses bypass resumable live-state handling', () {
+    for (final status in const [
+      MatchStatus.completed,
+      MatchStatus.abandoned,
+      MatchStatus.noResult,
+      MatchStatus.cancelled,
+    ]) {
+      expect(MatchDestinationResolver.isReadOnlyStatus(status), isTrue);
+    }
+    expect(
+        MatchDestinationResolver.isReadOnlyStatus(MatchStatus.live), isFalse);
   });
 
   test('innings break routes to continuation and completed to scorecard', () {

@@ -12,6 +12,7 @@ import '../../core/rules/captain_rules.dart';
 import '../../core/rules/bowling_rule_config.dart';
 import '../../core/validation/match_setup_validation.dart';
 import '../../core/navigation/match_destination.dart';
+import '../../core/utils/player_sorting.dart';
 
 class MatchSetupWizard extends ConsumerStatefulWidget {
   final String? preselectTeamId;
@@ -772,9 +773,10 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
 
   Widget _buildStickySetupActions() {
     final blocked = _currentStep == 0 &&
-        (_loadingTeamAPlayers ||
-            _loadingTeamBPlayers ||
-            !_teamValidation.isValid);
+            (_loadingTeamAPlayers ||
+                _loadingTeamBPlayers ||
+                !_teamValidation.isValid) ||
+        _currentStep == 5 && !_reviewIsReady;
     return Container(
       key: const ValueKey('match-setup-sticky-actions'),
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
@@ -853,6 +855,9 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
         _showSetupIssue('Striker and non-striker must be different.');
         return;
       }
+    } else if (_currentStep == 5 && !_reviewIsReady) {
+      _showSetupIssue(_reviewReadinessIssue);
+      return;
     }
     if (_currentStep < 5) {
       setState(() => _currentStep++);
@@ -910,7 +915,7 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Select Team A (Batting/Bowling)',
+                  const Text('Select Team A',
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   TextButton.icon(
                     icon: const Icon(Icons.add, size: 16),
@@ -942,7 +947,7 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Select Team B (Opponent)',
+                  const Text('Select Team B',
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   TextButton.icon(
                     icon: const Icon(Icons.add, size: 16),
@@ -1255,7 +1260,12 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
 
   Widget _buildSquadTeamCard({required bool isTeamA}) {
     final team = isTeamA ? _teamA : _teamB;
-    final players = isTeamA ? _teamAPlayers : _teamBPlayers;
+    final players = sortPlayerItemsByName(
+      isTeamA ? _teamAPlayers : _teamBPlayers,
+      nameOf: (player) => player.name,
+      idOf: (player) => player.id,
+      jerseyNumberOf: (player) => player.jerseyNumber,
+    );
     final selected = isTeamA ? _selectedASquad : _selectedBSquad;
     final eligible = isTeamA ? _eligibleABowlers : _eligibleBBowlers;
     final captainId = isTeamA ? _teamACaptainId : _teamBCaptainId;
@@ -1697,21 +1707,27 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
         : (_tossWinnerId == _teamA?.id ? _teamB?.id : _teamA?.id);
 
     final isTeamABatting = battingTeamId == _teamA?.id;
-    final battingSquad = isTeamABatting
-        ? _teamAPlayers.where((p) => _selectedASquad.contains(p.id)).toList()
-        : _teamBPlayers.where((p) => _selectedBSquad.contains(p.id)).toList();
+    final battingSquad = sortPlayerItemsByName(
+      isTeamABatting
+          ? _teamAPlayers.where((p) => _selectedASquad.contains(p.id))
+          : _teamBPlayers.where((p) => _selectedBSquad.contains(p.id)),
+      nameOf: (player) => player.name,
+      idOf: (player) => player.id,
+      jerseyNumberOf: (player) => player.jerseyNumber,
+    );
 
-    final bowlingSquad = isTeamABatting
-        ? _teamBPlayers
-            .where((p) =>
-                _selectedBSquad.contains(p.id) &&
-                _eligibleBBowlers.contains(p.id))
-            .toList()
-        : _teamAPlayers
-            .where((p) =>
-                _selectedASquad.contains(p.id) &&
-                _eligibleABowlers.contains(p.id))
-            .toList();
+    final bowlingSquad = sortPlayerItemsByName(
+      isTeamABatting
+          ? _teamBPlayers.where((p) =>
+              _selectedBSquad.contains(p.id) &&
+              _eligibleBBowlers.contains(p.id))
+          : _teamAPlayers.where((p) =>
+              _selectedASquad.contains(p.id) &&
+              _eligibleABowlers.contains(p.id)),
+      nameOf: (player) => player.name,
+      idOf: (player) => player.id,
+      jerseyNumberOf: (player) => player.jerseyNumber,
+    );
 
     return Step(
       title: const Text('Openers'),
@@ -1765,36 +1781,307 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
   }
 
   Step _buildConfirmationStep() {
+    final teamAPlayers = _selectedPlayers(isTeamA: true);
+    final teamBPlayers = _selectedPlayers(isTeamA: false);
+    final teamAReadiness = _squadReadiness(isTeamA: true);
+    final teamBReadiness = _squadReadiness(isTeamA: false);
+    final localizations = MaterialLocalizations.of(context);
+    final venue = _venueController.text.trim().isEmpty
+        ? 'Local Field'
+        : _venueController.text.trim();
+    final tossWinner = _tossWinnerId == _teamA?.id ? _teamA : _teamB;
+    final tossChoice = _tossDecision == 'BAT' ? 'bat first' : 'bowl first';
+
     return Step(
-      title: const Text('Confirm'),
+      title: const Text('Review'),
       isActive: _currentStep >= 5,
-      content: Card(
-        color: AppColors.primary,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('${_teamA?.name} vs ${_teamB?.name}',
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Text('Format: Custom $_totalOvers Overs (6 balls/over)',
-                  style: const TextStyle(color: Colors.white70)),
-              Text(
-                  'Venue: ${_venueController.text.isEmpty ? "Local Field" : _venueController.text}',
-                  style: const TextStyle(color: Colors.white70)),
-              const Divider(color: Colors.white30, height: 20),
-              const Text('Ready to begin live scoring session!',
-                  style: TextStyle(
-                      color: Colors.amber, fontWeight: FontWeight.bold)),
-            ],
+      content: TweenAnimationBuilder<double>(
+        key: const ValueKey('premium-match-review'),
+        duration: const Duration(milliseconds: 240),
+        tween: Tween(begin: 0, end: 1),
+        builder: (context, value, child) => Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 12 * (1 - value)),
+            child: child,
           ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Review Match',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Confirm the teams, roles, rules and opening players.',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 14),
+            _MatchReviewBanner(teamA: _teamA, teamB: _teamB),
+            const SizedBox(height: 14),
+            _ReviewSectionCard(
+              key: const ValueKey('review-match-summary'),
+              title: 'Match Summary',
+              icon: Icons.event_note_rounded,
+              child: LayoutBuilder(builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final itemWidth = width >= 520 ? (width - 12) / 2 : width;
+                return Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    _ReviewFact(
+                        width: itemWidth,
+                        icon: Icons.location_on_outlined,
+                        label: 'Venue',
+                        value: venue),
+                    _ReviewFact(
+                        width: itemWidth,
+                        icon: Icons.calendar_today_outlined,
+                        label: 'Match Date',
+                        value: localizations.formatMediumDate(_matchDate)),
+                    _ReviewFact(
+                        width: itemWidth,
+                        icon: Icons.schedule_rounded,
+                        label: 'Time',
+                        value: localizations.formatTimeOfDay(
+                            TimeOfDay.fromDateTime(_matchDate))),
+                    _ReviewFact(
+                        width: itemWidth,
+                        icon: Icons.emoji_events_outlined,
+                        label: 'Match Type',
+                        value: 'Custom Match'),
+                    _ReviewFact(
+                        width: itemWidth,
+                        icon: Icons.timer_outlined,
+                        label: 'Total Overs',
+                        value: '$_totalOvers Overs'),
+                    _ReviewFact(
+                        width: itemWidth,
+                        icon: Icons.sports_cricket_outlined,
+                        label: 'Balls per Over',
+                        value: '$_ballsPerOver'),
+                    _ReviewFact(
+                        width: itemWidth,
+                        icon: Icons.rotate_right_rounded,
+                        label: 'Max Overs per Bowler',
+                        value: '$_customMaxOversPerBowler'),
+                    _ReviewFact(
+                        width: itemWidth,
+                        icon: Icons.casino_outlined,
+                        label: 'Toss',
+                        value:
+                            '${tossWinner?.name ?? 'Not selected'} · $tossChoice'),
+                  ],
+                );
+              }),
+            ),
+            const SizedBox(height: 14),
+            LayoutBuilder(builder: (context, constraints) {
+              final stack = constraints.maxWidth < 360;
+              final teamACard = _ReviewTeamCard(
+                team: _teamA,
+                playerCount: teamAPlayers.length,
+                captain: _playerName(_teamAPlayers, _teamACaptainId),
+                wicketkeeper: _playerName(_teamAPlayers, _teamAWicketkeeperId),
+              );
+              final teamBCard = _ReviewTeamCard(
+                team: _teamB,
+                playerCount: teamBPlayers.length,
+                captain: _playerName(_teamBPlayers, _teamBCaptainId),
+                wicketkeeper: _playerName(_teamBPlayers, _teamBWicketkeeperId),
+              );
+              if (stack) {
+                return Column(children: [
+                  teamACard,
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text('VS',
+                        style: TextStyle(fontWeight: FontWeight.w900)),
+                  ),
+                  teamBCard,
+                ]);
+              }
+              return IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: teamACard),
+                    const SizedBox(
+                      width: 34,
+                      child: Center(
+                        child: Text('VS',
+                            style: TextStyle(fontWeight: FontWeight.w900)),
+                      ),
+                    ),
+                    Expanded(child: teamBCard),
+                  ],
+                ),
+              );
+            }),
+            const SizedBox(height: 14),
+            _ReviewSectionCard(
+              key: const ValueKey('review-squads'),
+              title: 'Squad Summary',
+              icon: Icons.groups_2_outlined,
+              padding: EdgeInsets.zero,
+              child: Column(children: [
+                _ReviewSquadTile(
+                  teamName: _teamA?.name ?? 'Team A',
+                  players: teamAPlayers,
+                  captainId: _teamACaptainId,
+                  wicketkeeperId: _teamAWicketkeeperId,
+                ),
+                const Divider(),
+                _ReviewSquadTile(
+                  teamName: _teamB?.name ?? 'Team B',
+                  players: teamBPlayers,
+                  captainId: _teamBCaptainId,
+                  wicketkeeperId: _teamBWicketkeeperId,
+                ),
+              ]),
+            ),
+            const SizedBox(height: 14),
+            _ReviewSectionCard(
+              key: const ValueKey('review-match-rules'),
+              title: 'Match Rules',
+              icon: Icons.rule_rounded,
+              child: Column(children: [
+                _ReviewRule(text: 'Custom limited-overs match'),
+                _ReviewRule(
+                    text: '$_totalOvers overs · $_ballsPerOver balls per over'),
+                _ReviewRule(
+                    text:
+                        'Maximum $_customMaxOversPerBowler over${_customMaxOversPerBowler == 1 ? '' : 's'} per bowler'),
+                _ReviewRule(
+                    text: _allowConsecutiveOvers
+                        ? 'Consecutive overs allowed'
+                        : 'Consecutive overs not allowed'),
+                _ReviewRule(
+                    text: _allowTacticalMidOverReplacement
+                        ? 'Tactical mid-over replacement allowed'
+                        : 'Mid-over replacement for incapacity only'),
+              ]),
+            ),
+            const SizedBox(height: 14),
+            _ReviewSectionCard(
+              key: const ValueKey('review-ready-status'),
+              title: 'Ready Status',
+              icon: Icons.verified_outlined,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _ReviewValidationChip(
+                      valid: _teamValidation.isValid,
+                      label: 'Both teams selected'),
+                  _ReviewValidationChip(
+                      valid: _hasValidCaptains, label: 'Captains assigned'),
+                  _ReviewValidationChip(
+                      valid: _teamAWicketkeeperId == null ||
+                          _selectedASquad.contains(_teamAWicketkeeperId),
+                      label: _teamAWicketkeeperId == null
+                          ? 'Team A keeper optional'
+                          : 'Team A keeper assigned'),
+                  _ReviewValidationChip(
+                      valid: _teamBWicketkeeperId == null ||
+                          _selectedBSquad.contains(_teamBWicketkeeperId),
+                      label: _teamBWicketkeeperId == null
+                          ? 'Team B keeper optional'
+                          : 'Team B keeper assigned'),
+                  _ReviewValidationChip(
+                      valid: teamAReadiness.isValid && teamBReadiness.isValid,
+                      label: 'Squads ready'),
+                  _ReviewValidationChip(
+                      valid: teamAReadiness.items.last.isValid &&
+                          teamBReadiness.items.last.isValid,
+                      label: 'Bowling rules valid'),
+                  _ReviewValidationChip(
+                      valid: _strikerId != null &&
+                          _nonStrikerId != null &&
+                          _bowlerId != null &&
+                          _strikerId != _nonStrikerId,
+                      label: 'Opening players selected'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _reviewIsReady
+                    ? const Color(0xFFE4F5EE)
+                    : const Color(0xFFFFF4E5),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(children: [
+                Icon(
+                  _reviewIsReady
+                      ? Icons.sports_cricket_rounded
+                      : Icons.warning_amber_rounded,
+                  color: _reviewIsReady
+                      ? AppColors.primary
+                      : Colors.orange.shade800,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _reviewIsReady
+                        ? 'All set! Time for the match.'
+                        : _reviewReadinessIssue,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ]),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  List<PlayersTableData> _selectedPlayers({required bool isTeamA}) {
+    final selected = isTeamA ? _selectedASquad : _selectedBSquad;
+    return sortPlayerItemsByName(
+      (isTeamA ? _teamAPlayers : _teamBPlayers)
+          .where((player) => selected.contains(player.id)),
+      nameOf: (player) => player.name,
+      idOf: (player) => player.id,
+      jerseyNumberOf: (player) => player.jerseyNumber,
+    );
+  }
+
+  String _playerName(List<PlayersTableData> players, String? id) {
+    final match = players.where((player) => player.id == id);
+    return match.isEmpty ? 'Not assigned' : match.first.name;
+  }
+
+  bool get _reviewIsReady =>
+      _teamA != null &&
+      _teamB != null &&
+      _teamValidation.isValid &&
+      _squadReadiness(isTeamA: true).isValid &&
+      _squadReadiness(isTeamA: false).isValid &&
+      _hasValidCaptains &&
+      _strikerId != null &&
+      _nonStrikerId != null &&
+      _strikerId != _nonStrikerId &&
+      _bowlerId != null;
+
+  String get _reviewReadinessIssue {
+    if (!_teamValidation.isValid) return _teamValidation.issues.first.message;
+    final squadIssue = _firstSquadReadinessIssue;
+    if (squadIssue != null) return squadIssue;
+    if (!_hasValidCaptains) return 'Assign one captain to each playing squad.';
+    if (_strikerId == null || _nonStrikerId == null || _bowlerId == null) {
+      return 'Select the opening batters and opening bowler.';
+    }
+    if (_strikerId == _nonStrikerId) {
+      return 'Opening striker and non-striker must be different.';
+    }
+    return 'Review the match setup before continuing.';
   }
 }
 
@@ -1803,6 +2090,337 @@ class _SquadReadinessItem {
   final String label;
 
   const _SquadReadinessItem(this.isValid, this.label);
+}
+
+class _MatchReviewBanner extends StatelessWidget {
+  final TeamsTableData? teamA;
+  final TeamsTableData? teamB;
+
+  const _MatchReviewBanner({required this.teamA, required this.teamB});
+
+  String _initials(String? name) {
+    final words = (name ?? '').trim().split(RegExp(r'\s+'));
+    if (words.isEmpty || words.first.isEmpty) return 'T';
+    return words.take(2).map((word) => word[0].toUpperCase()).join();
+  }
+
+  @override
+  Widget build(BuildContext context) => Container(
+        key: const ValueKey('review-match-banner'),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [AppColors.primaryDark, AppColors.primary],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x2607513B),
+              blurRadius: 22,
+              offset: Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(children: [
+          Expanded(
+            child: _ReviewBannerTeam(
+              initials: _initials(teamA?.name),
+              name: teamA?.name ?? 'Team A',
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: .14),
+              borderRadius: BorderRadius.circular(99),
+              border: Border.all(color: Colors.white24),
+            ),
+            child: const Text(
+              'VS',
+              style: TextStyle(
+                color: AppColors.accent,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+          Expanded(
+            child: _ReviewBannerTeam(
+              initials: _initials(teamB?.name),
+              name: teamB?.name ?? 'Team B',
+            ),
+          ),
+        ]),
+      );
+}
+
+class _ReviewBannerTeam extends StatelessWidget {
+  final String initials;
+  final String name;
+
+  const _ReviewBannerTeam({required this.initials, required this.name});
+
+  @override
+  Widget build(BuildContext context) => Column(children: [
+        CircleAvatar(
+          radius: 25,
+          backgroundColor: Colors.white,
+          child: Text(
+            initials,
+            style: const TextStyle(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+        const SizedBox(height: 9),
+        Text(
+          name,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ]);
+}
+
+class _ReviewSectionCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  const _ReviewSectionCard({
+    super.key,
+    required this.title,
+    required this.icon,
+    required this.child,
+    this.padding = const EdgeInsets.fromLTRB(16, 4, 16, 16),
+  });
+
+  @override
+  Widget build(BuildContext context) => Card(
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            child: Row(children: [
+              Icon(icon, size: 20, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+              ),
+            ]),
+          ),
+          Padding(padding: padding, child: child),
+        ]),
+      );
+}
+
+class _ReviewFact extends StatelessWidget {
+  final double width;
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _ReviewFact({
+    required this.width,
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        width: width,
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE4F5EE),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 19, color: AppColors.primary),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(label,
+                  style: const TextStyle(
+                      fontSize: 11, color: AppColors.textSecondary)),
+              const SizedBox(height: 2),
+              Text(value, style: const TextStyle(fontWeight: FontWeight.w800)),
+            ]),
+          ),
+        ]),
+      );
+}
+
+class _ReviewTeamCard extends StatelessWidget {
+  final TeamsTableData? team;
+  final int playerCount;
+  final String captain;
+  final String wicketkeeper;
+
+  const _ReviewTeamCard({
+    required this.team,
+    required this.playerCount,
+    required this.captain,
+    required this.wicketkeeper,
+  });
+
+  @override
+  Widget build(BuildContext context) => Card(
+        key: ValueKey('review-team-${team?.id ?? 'unknown'}'),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            CircleAvatar(
+              backgroundColor: const Color(0xFFE4F5EE),
+              foregroundColor: AppColors.primary,
+              child: Text(
+                (team?.shortName.isNotEmpty ?? false)
+                    ? team!.shortName.substring(0, 1).toUpperCase()
+                    : 'T',
+                style: const TextStyle(fontWeight: FontWeight.w900),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(team?.name ?? 'Team',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            _TeamDetail(
+                icon: Icons.check_circle_outline, text: '$playerCount players'),
+            _TeamDetail(
+                icon: Icons.workspace_premium_outlined,
+                text: 'Captain: $captain'),
+            _TeamDetail(
+                icon: Icons.sports_handball_outlined,
+                text: 'Keeper: $wicketkeeper'),
+          ]),
+        ),
+      );
+}
+
+class _TeamDetail extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _TeamDetail({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: 5),
+        child: Row(children: [
+          Icon(icon, size: 15, color: AppColors.primary),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(text,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12)),
+          ),
+        ]),
+      );
+}
+
+class _ReviewSquadTile extends StatelessWidget {
+  final String teamName;
+  final List<PlayersTableData> players;
+  final String? captainId;
+  final String? wicketkeeperId;
+
+  const _ReviewSquadTile({
+    required this.teamName,
+    required this.players,
+    required this.captainId,
+    required this.wicketkeeperId,
+  });
+
+  String _displayName(PlayersTableData player) {
+    final captain = player.id == captainId;
+    final keeper = player.id == wicketkeeperId;
+    if (captain && keeper) return '${player.name} (C & WK)';
+    if (captain) return '${player.name} (C)';
+    if (keeper) return '${player.name} (WK)';
+    return player.name;
+  }
+
+  @override
+  Widget build(BuildContext context) => ExpansionTile(
+        key: ValueKey('review-squad-$teamName'),
+        initiallyExpanded: false,
+        title:
+            Text(teamName, style: const TextStyle(fontWeight: FontWeight.w800)),
+        subtitle: Text('${players.length} selected players'),
+        children: players
+            .map((player) => ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.check_circle,
+                      size: 18, color: AppColors.primary),
+                  title: Text(_displayName(player)),
+                ))
+            .toList(),
+      );
+}
+
+class _ReviewRule extends StatelessWidget {
+  final String text;
+
+  const _ReviewRule({required this.text});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(children: [
+          const Icon(Icons.check_rounded, size: 17, color: AppColors.primary),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text)),
+        ]),
+      );
+}
+
+class _ReviewValidationChip extends StatelessWidget {
+  final bool valid;
+  final String label;
+
+  const _ReviewValidationChip({required this.valid, required this.label});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: valid ? const Color(0xFFE4F5EE) : const Color(0xFFFFE9E5),
+          borderRadius: BorderRadius.circular(99),
+          border: Border.all(
+            color: valid ? const Color(0xFFB9E3D1) : const Color(0xFFF2B8AE),
+          ),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(valid ? Icons.check_circle : Icons.error_outline,
+              size: 15, color: valid ? AppColors.primary : AppColors.wicketRed),
+          const SizedBox(width: 5),
+          Text(label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: valid ? AppColors.primaryDark : AppColors.wicketRed,
+              )),
+        ]),
+      );
 }
 
 class _SquadReadiness {

@@ -57,7 +57,7 @@ class ScorecardPdfService {
                 if (brandLogo != null)
                   pw.Image(brandLogo, width: 28, height: 28),
                 pw.Text(
-                  'Cricket Scorer | Match ID: ${matchState.matchId}',
+                  'TurfScore | Match ID: ${matchState.matchId}',
                   style: pw.TextStyle(fontSize: 9, color: PdfColors.grey600),
                 ),
               ],
@@ -171,7 +171,7 @@ class ScorecardPdfService {
               pw.Padding(
                 padding: const pw.EdgeInsets.only(bottom: 3),
                 child: pw.Text(
-                  '${team.name}: ${team.players.map((player) => '${matchState.displayNameFor(team.id, player.id, player.name)} - ${playerStyleSummary(player.battingStyle, player.bowlingStyle)}').join(', ')}',
+                  '${team.name}: ${team.players.map((player) => matchState.displayNameFor(team.id, player.id, player.name)).join(', ')}',
                   style: const pw.TextStyle(fontSize: 9),
                 ),
               ),
@@ -329,10 +329,6 @@ class ScorecardPdfService {
         events.fold<int>(0, (sum, event) => sum + event.penaltyRuns);
     String displayName(String playerId, String playerName, String teamId) =>
         engine.state.displayNameFor(teamId, playerId, playerName);
-    Player playerFor(Team source, String playerId) => source.players.firstWhere(
-          (player) => player.id == playerId,
-          orElse: () => Player(id: playerId, name: ''),
-        );
     final overNumbers = events.map((event) => event.overNumber).toSet().toList()
       ..sort();
     var runningTotal = 0;
@@ -390,7 +386,7 @@ class ScorecardPdfService {
           headers: ['Batter', 'Dismissal', 'R', 'B', '4s', '6s', 'SR'],
           data: batted
               .map((b) => [
-                    '${displayName(b.playerId, b.playerName, team.id)} [${battingStyleAbbreviation(playerFor(team, b.playerId).battingStyle)}]',
+                    displayName(b.playerId, b.playerName, team.id),
                     b.dismissalInfo,
                     '${b.runs}',
                     '${b.ballsFaced}',
@@ -443,7 +439,7 @@ class ScorecardPdfService {
           headers: ['Bowler', 'O', 'M', 'R', 'W', 'Wd', 'NB', 'Econ'],
           data: bowlers
               .map((b) => [
-                    '${displayName(b.playerId, b.playerName, bowlingTeam.id)} [${bowlingStyleLabel(playerFor(bowlingTeam, b.playerId).bowlingStyle)}]',
+                    displayName(b.playerId, b.playerName, bowlingTeam.id),
                     b.oversFormatted,
                     '${b.maidens}',
                     '${b.runsConceded}',

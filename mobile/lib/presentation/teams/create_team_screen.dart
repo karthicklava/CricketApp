@@ -203,7 +203,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                     // Actions
                     SizedBox(
                       width: double.infinity,
-                      height: 50,
+                      height: AppCtaStyle.height,
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.group_add),
                         label: const Text('SAVE & ADD PLAYERS',
@@ -218,7 +218,7 @@ class _CreateTeamScreenState extends ConsumerState<CreateTeamScreen> {
                     const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
-                      height: 48,
+                      height: AppCtaStyle.height,
                       child: OutlinedButton(
                         onPressed: () => _saveTeam(false),
                         child: const Text('SAVE TEAM ONLY'),

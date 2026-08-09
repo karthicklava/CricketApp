@@ -72,6 +72,7 @@ void main() {
         dismissedPlayerId: 'a1',
       ),
     );
+    engine.confirmInningsEnd();
     engine.startSecondInnings(
       openingStrikerId: 'b1',
       openingNonStrikerId: 'b2',
@@ -82,6 +83,7 @@ void main() {
       scorerDeviceId: 'test',
       runsBatter: 2,
     );
+    engine.confirmMatchEnd();
 
     expect(engine.state.status, MatchStatus.completed);
     final awards =

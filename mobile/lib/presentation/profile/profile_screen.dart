@@ -122,20 +122,6 @@ class ProfileScreen extends ConsumerWidget {
               onTap: () => context.push('/profile/launcher-icon'),
             ),
           ),
-
-          // Developer Options
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text('DEVELOPER OPTIONS',
-                style:
-                    TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-          ),
-          ListTile(
-            leading: const Icon(Icons.bug_report, color: Colors.deepOrange),
-            title: const Text('Explore Demo Match'),
-            subtitle: const Text('Launch isolated demo scoring session'),
-            onTap: () => context.push('/demo-scoring'),
-          ),
         ],
       ),
     );

@@ -1,6 +1,8 @@
 import 'package:cricket_scoring_engine/cricket_scoring_engine.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/utils/player_sorting.dart';
+
 enum LatePlayerSource { existing, create }
 
 class LatePlayerSelection {
@@ -105,8 +107,7 @@ class _LatePlayerBottomSheetState extends State<LatePlayerBottomSheet> {
           role: _existing!.role,
           battingStyle: _existing!.battingStyle,
           bowlingStyle: _existing!.bowlingStyle,
-          isEligibleBowler:
-              _existing!.bowlingStyle != BowlingStyle.none,
+          isEligibleBowler: _existing!.bowlingStyle != BowlingStyle.none,
           isWicketKeeper: _existing!.isWicketKeeper,
           addPermanently: true,
         ),
@@ -119,8 +120,7 @@ class _LatePlayerBottomSheetState extends State<LatePlayerBottomSheet> {
       LatePlayerSelection(
         source: _source,
         name: _name.text.trim(),
-        jerseyNumber:
-            _jersey.text.trim().isEmpty ? null : _jersey.text.trim(),
+        jerseyNumber: _jersey.text.trim().isEmpty ? null : _jersey.text.trim(),
         role: _role,
         battingStyle: BattingStyle.rightHand,
         bowlingStyle:
@@ -133,126 +133,129 @@ class _LatePlayerBottomSheetState extends State<LatePlayerBottomSheet> {
   }
 
   @override
-  Widget build(BuildContext context) => SafeArea(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            20,
-            16,
-            20,
-            20 + MediaQuery.viewInsetsOf(context).bottom,
-          ),
-          child: Form(
-            key: _formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Add Player to ${widget.team.name}',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  Text(widget.isBattingTeam ? 'Batting team' : 'Bowling team'),
-                  const SizedBox(height: 12),
-                  SegmentedButton<LatePlayerSource>(
-                    segments: const [
-                      ButtonSegment(
-                        value: LatePlayerSource.existing,
-                        label: Text('Existing'),
-                        icon: Icon(Icons.person_search),
-                      ),
-                      ButtonSegment(
-                        value: LatePlayerSource.create,
-                        label: Text('Create New'),
-                        icon: Icon(Icons.person_add),
-                      ),
-                    ],
-                    selected: {_source},
-                    onSelectionChanged: (value) =>
-                        setState(() => _source = value.first),
-                  ),
-                  const SizedBox(height: 16),
-                  if (_source == LatePlayerSource.existing)
-                    DropdownButtonFormField<ExistingPlayerOption>(
-                      initialValue: _existing,
-                      decoration:
-                          const InputDecoration(labelText: 'Select player'),
-                      items: widget.existingPlayers
-                          .map((player) => DropdownMenuItem(
-                                value: player,
-                                child: Text(player.name),
-                              ))
-                          .toList(),
-                      onChanged: (value) => setState(() => _existing = value),
-                    )
-                  else ...[
-                    TextFormField(
-                      controller: _name,
-                      autofocus: true,
-                      decoration:
-                          const InputDecoration(labelText: 'Player name *'),
-                      validator: (value) => value == null || value.trim().isEmpty
-                          ? 'Enter a player name.'
-                          : null,
+  Widget build(BuildContext context) {
+    final existingPlayers = sortPlayerItemsByName(
+      widget.existingPlayers,
+      nameOf: (player) => player.name,
+      idOf: (player) => player.id,
+      jerseyNumberOf: (player) => player.jerseyNumber,
+    );
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          16,
+          20,
+          20 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Add Player to ${widget.team.name}',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                Text(widget.isBattingTeam ? 'Batting team' : 'Bowling team'),
+                const SizedBox(height: 12),
+                SegmentedButton<LatePlayerSource>(
+                  segments: const [
+                    ButtonSegment(
+                      value: LatePlayerSource.existing,
+                      label: Text('Existing'),
+                      icon: Icon(Icons.person_search),
                     ),
-                    TextFormField(
-                      controller: _jersey,
-                      decoration:
-                          const InputDecoration(labelText: 'Jersey number'),
+                    ButtonSegment(
+                      value: LatePlayerSource.create,
+                      label: Text('Create New'),
+                      icon: Icon(Icons.person_add),
                     ),
-                    DropdownButtonFormField<String>(
-                      initialValue: _role,
-                      decoration: const InputDecoration(labelText: 'Role'),
-                      items: const [
-                        DropdownMenuItem(
-                            value: 'batter', child: Text('Batter')),
-                        DropdownMenuItem(
-                            value: 'bowler', child: Text('Bowler')),
-                        DropdownMenuItem(
-                            value: 'allRounder', child: Text('All-rounder')),
-                        DropdownMenuItem(
-                            value: 'wicketKeeper',
-                            child: Text('Wicketkeeper')),
-                      ],
-                      onChanged: (value) =>
-                          setState(() => _role = value ?? 'allRounder'),
-                    ),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      value: _eligibleBowler,
-                      title: const Text('Eligible bowler'),
-                      onChanged: (value) =>
-                          setState(() => _eligibleBowler = value),
-                    ),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      value: _wicketKeeper,
-                      title: const Text('Wicketkeeper'),
-                      onChanged: (value) =>
-                          setState(() => _wicketKeeper = value),
-                    ),
-                    if (widget.allowPermanentAddition)
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        value: _permanent,
-                        title: const Text('Add to team permanently'),
-                        onChanged: (value) =>
-                            setState(() => _permanent = value),
-                      ),
                   ],
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: _submit,
-                    child: const Text('Add Player'),
+                  selected: {_source},
+                  onSelectionChanged: (value) =>
+                      setState(() => _source = value.first),
+                ),
+                const SizedBox(height: 16),
+                if (_source == LatePlayerSource.existing)
+                  DropdownButtonFormField<ExistingPlayerOption>(
+                    initialValue: _existing,
+                    decoration:
+                        const InputDecoration(labelText: 'Select player'),
+                    items: existingPlayers
+                        .map((player) => DropdownMenuItem(
+                              value: player,
+                              child: Text(player.name),
+                            ))
+                        .toList(),
+                    onChanged: (value) => setState(() => _existing = value),
+                  )
+                else ...[
+                  TextFormField(
+                    controller: _name,
+                    autofocus: true,
+                    decoration:
+                        const InputDecoration(labelText: 'Player name *'),
+                    validator: (value) => value == null || value.trim().isEmpty
+                        ? 'Enter a player name.'
+                        : null,
                   ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
+                  TextFormField(
+                    controller: _jersey,
+                    decoration:
+                        const InputDecoration(labelText: 'Jersey number'),
                   ),
+                  DropdownButtonFormField<String>(
+                    initialValue: _role,
+                    decoration: const InputDecoration(labelText: 'Role'),
+                    items: const [
+                      DropdownMenuItem(value: 'batter', child: Text('Batter')),
+                      DropdownMenuItem(value: 'bowler', child: Text('Bowler')),
+                      DropdownMenuItem(
+                          value: 'allRounder', child: Text('All-rounder')),
+                      DropdownMenuItem(
+                          value: 'wicketKeeper', child: Text('Wicketkeeper')),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => _role = value ?? 'allRounder'),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _eligibleBowler,
+                    title: const Text('Eligible bowler'),
+                    onChanged: (value) =>
+                        setState(() => _eligibleBowler = value),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _wicketKeeper,
+                    title: const Text('Wicketkeeper'),
+                    onChanged: (value) => setState(() => _wicketKeeper = value),
+                  ),
+                  if (widget.allowPermanentAddition)
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: _permanent,
+                      title: const Text('Add to team permanently'),
+                      onChanged: (value) => setState(() => _permanent = value),
+                    ),
                 ],
-              ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: _submit,
+                  child: const Text('Add Player'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+              ],
             ),
           ),
         ),
-      );
+      ),
+    );
+  }
 }

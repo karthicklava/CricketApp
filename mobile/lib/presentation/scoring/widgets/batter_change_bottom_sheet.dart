@@ -1,6 +1,8 @@
 import 'package:cricket_scoring_engine/cricket_scoring_engine.dart';
 import 'package:flutter/material.dart';
 
+import '../../../core/utils/player_sorting.dart';
+
 class BatterChangeSelection {
   final Player player;
   final bool replaceStriker;
@@ -40,6 +42,7 @@ class _BatterChangeBottomSheetState extends State<BatterChangeBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final eligiblePlayers = sortPlayersByName(widget.eligiblePlayers);
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(
@@ -57,7 +60,7 @@ class _BatterChangeBottomSheetState extends State<BatterChangeBottomSheet> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 12),
-            if (widget.eligiblePlayers.isEmpty)
+            if (eligiblePlayers.isEmpty)
               const Text('No eligible batters are available.')
             else
               DropdownButtonFormField<Player>(
@@ -65,7 +68,7 @@ class _BatterChangeBottomSheetState extends State<BatterChangeBottomSheet> {
                   labelText: 'Eligible batter',
                   border: OutlineInputBorder(),
                 ),
-                items: widget.eligiblePlayers
+                items: eligiblePlayers
                     .map((player) => DropdownMenuItem(
                           value: player,
                           child: Text(player.name),

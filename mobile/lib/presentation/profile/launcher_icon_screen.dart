@@ -268,7 +268,8 @@ class _LauncherPreview extends StatelessWidget {
                         style: TextStyle(color: Colors.white, fontSize: 40))))
             : Image.asset(
                 'assets/branding/launcher_previews/jersey_$number.png',
-                fit: BoxFit.cover,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.high,
               ),
       );
 }

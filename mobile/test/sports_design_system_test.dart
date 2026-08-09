@@ -12,6 +12,24 @@ void main() {
     expect(theme.scaffoldBackgroundColor, const Color(0xFFF5F7FA));
   });
 
+  test('all Material CTA families share the capsule specification', () {
+    final theme = AppTheme.lightTheme;
+    final states = <WidgetState>{};
+    final filled = theme.filledButtonTheme.style!;
+    final elevated = theme.elevatedButtonTheme.style!;
+    final outlined = theme.outlinedButtonTheme.style!;
+
+    for (final style in [filled, elevated, outlined]) {
+      expect(style.minimumSize?.resolve(states)?.height, AppCtaStyle.height);
+      expect(style.shape?.resolve(states), isA<StadiumBorder>());
+      expect(style.textStyle?.resolve(states)?.fontWeight, FontWeight.w800);
+    }
+    expect(filled.backgroundColor?.resolve(states), AppColors.primary);
+    expect(elevated.backgroundColor?.resolve(states), AppColors.primary);
+    expect(outlined.backgroundColor?.resolve(states), Colors.white);
+    expect(outlined.side?.resolve(states)?.color, AppColors.primary);
+  });
+
   testWidgets('shared controls and floating navigation fit compact phones',
       (tester) async {
     tester.view.physicalSize = const Size(320, 700);
@@ -43,6 +61,10 @@ void main() {
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.text('Home'), findsOneWidget);
     expect(find.text('Profile'), findsOneWidget);
+    final primarySize = tester.getSize(find.byType(FilledButton));
+    final secondarySize = tester.getSize(find.byType(OutlinedButton));
+    expect(primarySize.height, AppCtaStyle.height);
+    expect(secondarySize.height, AppCtaStyle.height);
     expect(tester.takeException(), isNull);
   });
 

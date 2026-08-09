@@ -12,10 +12,11 @@ import 'widgets/match_result_view.dart';
 import 'widgets/extras_bottom_sheet.dart';
 import 'widgets/batter_change_bottom_sheet.dart';
 import 'widgets/late_player_bottom_sheet.dart';
-import 'widgets/live_player_figures_panel.dart';
 import 'widgets/end_match_bottom_sheet.dart';
 import 'widgets/next_batter_selection_bottom_sheet.dart';
+import 'widgets/completion_review_bottom_sheet.dart';
 import '../../core/theme.dart';
+import '../../core/utils/player_sorting.dart';
 import '../../data/repositories/match_repository.dart';
 import '../../data/repositories/team_repository.dart';
 
@@ -51,6 +52,11 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final state = _engine.state;
+      if (state.status == MatchStatus.inningsReview ||
+          state.status == MatchStatus.matchReview) {
+        _showCompletionReview();
+        return;
+      }
       if (state.status == MatchStatus.inningsBreak) {
         _showSecondInningsModal();
         return;
@@ -268,6 +274,13 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen> {
   void _evaluatePostDeliveryPipeline(DeliveryEvent lastEvent) {
     final state = _engine.state;
 
+    if (state.status == MatchStatus.inningsReview ||
+        state.status == MatchStatus.matchReview) {
+      _persistMatchStatus();
+      _showCompletionReview();
+      return;
+    }
+
     // Priority 1: Match Completed
     if (state.status == MatchStatus.completed) {
       _persistMatchStatus();
@@ -290,6 +303,99 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen> {
     if (state.activeInnings.flowState == InningsFlowState.awaitingNextBowler) {
       _showOverSummaryModal();
     }
+  }
+
+  Future<void> _showCompletionReview() async {
+    final state = _engine.state;
+    if (state.status != MatchStatus.inningsReview &&
+        state.status != MatchStatus.matchReview) {
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
+      useSafeArea: true,
+      builder: (_) => CompletionReviewBottomSheet(
+        matchState: _engine.state,
+        onUndo: _undo,
+        onEdit: () async {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _showEditLastBall();
+          });
+          return true;
+        },
+        onConfirm: () async {
+          final wasInningsReview =
+              _engine.state.status == MatchStatus.inningsReview;
+          setState(() {
+            if (wasInningsReview) {
+              _engine.confirmInningsEnd();
+            } else {
+              _engine.confirmMatchEnd();
+              _attachAwardsWhenCompleted();
+            }
+          });
+          await _persistMatchStatus();
+          if (wasInningsReview && mounted) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) _showSecondInningsModal();
+            });
+          }
+          return true;
+        },
+      ),
+    );
+  }
+
+  Future<void> _showEditLastBall() async {
+    if (_engine.state.events.isEmpty) return;
+    final original = _engine.state.events.last;
+    final edit = await showModalBottomSheet<FinalDeliveryEdit>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => EditFinalDeliveryBottomSheet(delivery: original),
+    );
+    if (edit == null || !mounted) {
+      if (_engine.state.status == MatchStatus.inningsReview ||
+          _engine.state.status == MatchStatus.matchReview) {
+        _showCompletionReview();
+      }
+      return;
+    }
+
+    final undone = _engine.undoLastDelivery();
+    if (undone == null) return;
+    late DeliveryEvent corrected;
+    setState(() {
+      corrected = _engine.recordDelivery(
+        eventId:
+            '${original.eventId}_edit_${DateTime.now().microsecondsSinceEpoch}',
+        scorerDeviceId: widget.deviceId,
+        runsBatter:
+            edit.type == FinalDeliveryEditType.legalRuns ? edit.runs : 0,
+        extrasType: switch (edit.type) {
+          FinalDeliveryEditType.legalRuns => ExtrasType.none,
+          FinalDeliveryEditType.wide => ExtrasType.wide,
+          FinalDeliveryEditType.noBall => ExtrasType.noBall,
+        },
+        additionalWideRuns:
+            edit.type == FinalDeliveryEditType.wide ? edit.runs - 1 : null,
+        noBallRuns: edit.type == FinalDeliveryEditType.noBall ? 1 : null,
+        isBoundaryFour:
+            edit.type == FinalDeliveryEditType.legalRuns && edit.runs == 4,
+        isBoundarySix:
+            edit.type == FinalDeliveryEditType.legalRuns && edit.runs == 6,
+      );
+    });
+    await ref
+        .read(matchRepositoryProvider)
+        .undoDelivery(original.eventId, _engine.state);
+    await _persistDelivery(corrected);
+    if (!mounted) return;
+    _evaluatePostDeliveryPipeline(corrected);
   }
 
   Future<void> _showRequiredNextBatterModal(DeliveryEvent wicketEvent) async {
@@ -324,6 +430,7 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen> {
       builder: (_) => NextBatterSelectionBottomSheet(
         eligibleBatters: eligible,
         onAddNewBatter: () => _addLatePlayer(battingTeam),
+        onUndoLastBall: _undo,
         onConfirmed: (playerId) async {
           final previous = _engine.state;
           try {
@@ -363,6 +470,7 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => OverSummaryBottomSheet(
         matchState: _engine.state,
+        onUndoLastBall: _undo,
         onSelectNextBowler: () {
           nextAction = _OverSummaryAction.selectBowler;
         },
@@ -410,6 +518,7 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen> {
             _openBowlerSelectionModal(isMidOver: isMidOver);
           }
         },
+        onUndoLastBall: isMidOver ? null : _undo,
         onBowlerSelected: (newBowlerId, reason) async {
           final previous = _engine.state;
           try {
@@ -471,6 +580,7 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen> {
       builder: (ctx) => SecondInningsSetupModal(
         matchState: _engine.state,
         onEndMatch: _showEndMatchFlow,
+        onUndoLastBall: _undo,
         onStartSecondInnings: (strikerId, nonStrikerId, bowlerId) {
           setState(() {
             _engine.startSecondInnings(
@@ -485,22 +595,23 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen> {
     );
   }
 
-  Future<void> _undo() async {
+  Future<bool> _undo() async {
     DeliveryEvent? undone;
     setState(() {
       undone = _engine.undoLastDelivery();
     });
-    if (undone == null) return;
+    if (undone == null) return false;
     await ref
         .read(matchRepositoryProvider)
         .undoDelivery(undone!.eventId, _engine.state);
-    if (!mounted) return;
+    if (!mounted) return true;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Last delivery undone successfully'),
         duration: Duration(seconds: 1),
       ),
     );
+    return true;
   }
 
   Future<void> _showBatterActions() async {
@@ -883,7 +994,7 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen> {
             for (final team in [state.teamA, state.teamB]) ...[
               const SizedBox(height: 16),
               Text(team.name, style: Theme.of(context).textTheme.titleMedium),
-              ...team.players.map((player) => ListTile(
+              ...sortPlayersByName(team.players).map((player) => ListTile(
                     leading: const Icon(Icons.person_outline),
                     title: Text(player.name),
                     subtitle: Text(player.isLateAddition
@@ -1046,7 +1157,11 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen> {
         state.status == MatchStatus.abandoned ||
         state.status == MatchStatus.noResult ||
         state.status == MatchStatus.cancelled) {
-      return MatchResultView(matchState: state, engine: _engine);
+      return MatchResultView(
+        matchState: state,
+        engine: _engine,
+        onUndoLastBall: _undo,
+      );
     }
 
     final inn = state.activeInnings;
@@ -1097,6 +1212,11 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen> {
                 syncStatusText: _syncStatusText,
                 isOnline: _isOnline,
                 compact: true,
+                liveFigures: liveFigures,
+                onMorePressed: _showMoreActions,
+                onBowlerPressed: inn.flowState == InningsFlowState.scoring
+                    ? () => _openBowlerSelectionModal(isMidOver: true)
+                    : null,
               ),
               // Only secondary live information scrolls. Expanded constrains
               // its viewport to the space between the fixed header and footer,
@@ -1132,15 +1252,6 @@ class _LiveScoringScreenState extends ConsumerState<LiveScoringScreen> {
                           ),
                         ),
                       ],
-                      LivePlayerFiguresPanel(
-                        figures: liveFigures,
-                        matchState: state,
-                        onMorePressed: _showMoreActions,
-                        onBowlerPressed: inn.flowState ==
-                                InningsFlowState.scoring
-                            ? () => _openBowlerSelectionModal(isMidOver: true)
-                            : null,
-                      ),
                     ],
                   ),
                 ),

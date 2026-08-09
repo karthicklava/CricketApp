@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/repositories/team_repository.dart';
 import '../../data/local/database.dart';
 import '../../core/theme.dart';
+import '../../core/utils/player_sorting.dart';
 import '../common/widgets/sports_ui.dart';
 import 'package:cricket_scoring_engine/cricket_scoring_engine.dart';
 
@@ -43,8 +44,18 @@ class _TeamDetailsScreenState extends ConsumerState<TeamDetailsScreen> {
     final removedPlayers = await repo.getRemovedTeamPlayers(widget.team.id);
     if (mounted) {
       setState(() {
-        _players = players;
-        _removedPlayers = removedPlayers;
+        _players = sortPlayerItemsByName(
+          players,
+          nameOf: (player) => player.name,
+          idOf: (player) => player.id,
+          jerseyNumberOf: (player) => player.jerseyNumber,
+        );
+        _removedPlayers = sortPlayerItemsByName(
+          removedPlayers,
+          nameOf: (player) => player.name,
+          idOf: (player) => player.id,
+          jerseyNumberOf: (player) => player.jerseyNumber,
+        );
         _isLoading = false;
       });
     }

@@ -9,8 +9,9 @@ const maximumJerseyNumber = 99;
 const _androidManifest = 'android/app/src/main/AndroidManifest.xml';
 const _iosPlist = 'ios/Runner/Info.plist';
 const _xcodeProject = 'ios/Runner.xcodeproj/project.pbxproj';
-const _foregroundChroma =
-    'assets/branding/launcher_shield_foreground_chroma.png';
+// This production-sized transparent PNG is the single raster master for every
+// jersey launcher surface. It is never generated from a Flutter preview.
+const _foregroundMaster = 'assets/branding/launcher_shield_foreground.png';
 
 const _androidLegacySizes = <String, int>{
   'mdpi': 48,
@@ -46,10 +47,14 @@ const _iosSizes = <String, int>{
 
 void main() {
   _removeOldGeneratedAssets();
-  final chroma = img.decodeImage(File(_foregroundChroma).readAsBytesSync());
-  if (chroma == null) throw StateError('Unable to decode $_foregroundChroma');
-  final foregroundMaster = _removeMagenta(chroma);
-  _writePng('assets/branding/launcher_shield_foreground.png', foregroundMaster);
+  final foregroundMaster =
+      img.decodeImage(File(_foregroundMaster).readAsBytesSync());
+  if (foregroundMaster == null) {
+    throw StateError('Unable to decode $_foregroundMaster');
+  }
+  if (foregroundMaster.width < 1024 || foregroundMaster.height < 1024) {
+    throw StateError('Launcher master must be at least 1024 x 1024.');
+  }
   final appIconContents =
       File('ios/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json')
           .readAsStringSync();
@@ -68,19 +73,19 @@ void main() {
     final monochrome = _monochrome(foreground);
 
     _writePng('assets/branding/launcher_previews/jersey_$display.png',
-        img.copyResize(legacy, width: 192, height: 192));
+        _resize(legacy, 512));
     for (final size in _androidLegacySizes.entries) {
       _writePng(
           'android/app/src/main/res/mipmap-${size.key}/jersey_$display.png',
-          img.copyResize(legacy, width: size.value, height: size.value));
+          _resize(legacy, size.value));
     }
     for (final size in _androidAdaptiveSizes.entries) {
       _writePng(
           'android/app/src/main/res/drawable-${size.key}/jersey_${display}_foreground.png',
-          img.copyResize(foreground, width: size.value, height: size.value));
+          _resize(foreground, size.value));
       _writePng(
           'android/app/src/main/res/drawable-${size.key}/jersey_${display}_monochrome.png',
-          img.copyResize(monochrome, width: size.value, height: size.value));
+          _resize(monochrome, size.value));
     }
     File('android/app/src/main/res/mipmap-anydpi-v26/jersey_$display.xml')
       ..parent.createSync(recursive: true)
@@ -92,8 +97,7 @@ void main() {
           ..createSync(recursive: true);
     File('${iosSet.path}/Contents.json').writeAsStringSync(appIconContents);
     for (final size in _iosSizes.entries) {
-      _writePng('${iosSet.path}/${size.key}',
-          img.copyResize(legacy, width: size.value, height: size.value));
+      _writePng('${iosSet.path}/${size.key}', _resize(legacy, size.value));
     }
     plistIcons.writeln(_plistIcon(display));
   }
@@ -116,7 +120,9 @@ void main() {
     'maximum': maximumJerseyNumber,
     'variantCount': 99,
     'style': 'shield',
-    'nativeSourceSize': 1024,
+    'nativeSourceSize': foregroundMaster.width,
+    'previewSize': 512,
+    'masterAsset': _foregroundMaster,
     'previewIsNativeSource': false,
   }));
 }
@@ -150,61 +156,200 @@ void _removeOldGeneratedAssets() {
   }
 }
 
-img.Image _removeMagenta(img.Image source) {
-  final output =
-      img.Image(width: source.width, height: source.height, numChannels: 4);
-  for (var y = 0; y < source.height; y++) {
-    for (var x = 0; x < source.width; x++) {
-      final pixel = source.getPixel(x, y);
-      final r = pixel.r.toDouble();
-      final g = pixel.g.toDouble();
-      final b = pixel.b.toDouble();
-      final distance = math
-          .sqrt(math.pow(r - 255, 2) + math.pow(g, 2) + math.pow(b - 255, 2));
-      final alpha = distance <= 55
-          ? 0
-          : distance >= 145
-              ? pixel.a.toInt()
-              : (((distance - 55) / 90) * pixel.a).round().clamp(0, 255);
-      output.setPixelRgba(x, y, r.round(), g.round(), b.round(), alpha);
-    }
-  }
+img.Image _numberedForeground(img.Image shield, String display) {
+  final output = img.Image(width: 1024, height: 1024, numChannels: 4);
+  final safeShield = img.copyResize(shield,
+      width: 760, height: 760, interpolation: img.Interpolation.average);
+  img.compositeImage(output, safeShield, dstX: 132, dstY: 132);
+
+  // Render each jersey digit directly at the 1024px production resolution.
+  // This avoids the previous 48px bitmap-font upscale, which was the primary
+  // source of blurred and jagged personalized icons.
+  final shadow = _jerseyNumberLayer(display, img.ColorRgba8(38, 71, 52, 210));
+  final number =
+      _jerseyNumberLayer(display, img.ColorRgba8(252, 251, 244, 255));
+  img.compositeImage(output, shadow, dstX: 7, dstY: 9);
+  img.compositeImage(output, number);
   return output;
 }
 
-img.Image _numberedForeground(img.Image shield, String display) {
-  final output = img.Image(width: 1024, height: 1024, numChannels: 4);
-  final safeShield = img.copyResize(shield, width: 760, height: 760);
-  img.compositeImage(output, safeShield, dstX: 132, dstY: 132);
+img.Image _jerseyNumberLayer(String value, img.Color color) {
+  final layer = img.Image(width: 1024, height: 1024, numChannels: 4);
+  final scale = value.length == 1 ? 1.20 : .88;
+  final digitWidth = (160 * scale).round();
+  final digitHeight = (260 * scale).round();
+  final gap = value.length == 1 ? 0 : 26;
+  final totalWidth = value.length * digitWidth + (value.length - 1) * gap;
+  final startX = (1024 - totalWidth) ~/ 2;
+  final startY = value.length == 1 ? 302 : 340;
 
-  final textLayer = img.Image(width: 240, height: 90, numChannels: 4);
-  for (var dx = 0; dx <= 2; dx++) {
-    for (var dy = 0; dy <= 2; dy++) {
-      img.drawString(textLayer, display,
-          font: img.arial48,
-          x: dx,
-          y: dy,
-          color: img.ColorRgba8(255, 255, 255, 255));
-    }
+  for (var index = 0; index < value.length; index++) {
+    _drawAthleticDigit(
+      layer,
+      value[index],
+      startX + index * (digitWidth + gap),
+      startY,
+      scale,
+      color,
+    );
   }
-  final trimmed = img.trim(textLayer, mode: img.TrimMode.transparent);
-  final width = display.length == 1 ? 150 : 360;
-  final scaled = img.copyResize(trimmed,
-      width: width,
-      height: (trimmed.height * width / trimmed.width).round(),
-      interpolation: img.Interpolation.cubic);
-  var x = (1024 - scaled.width) ~/ 2;
-  if (display == '1') x += 5;
-  final y = 360;
-  final shadow = img.Image.from(scaled);
-  for (final pixel in shadow) {
-    if (pixel.a > 0) {
-      shadow.setPixelRgba(pixel.x, pixel.y, 112, 75, 5, pixel.a.toInt());
-    }
+  return layer;
+}
+
+void _drawAthleticDigit(img.Image layer, String digit, int x, int y,
+    double scale, img.Color color) {
+  final clear = img.ColorRgba8(0, 0, 0, 0);
+  int sx(num value) => x + (value * scale).round();
+  int sy(num value) => y + (value * scale).round();
+  void polygon(List<(num, num)> points, img.Color fill) => img.fillPolygon(
+        layer,
+        vertices: points
+            .map((point) => img.Point(sx(point.$1), sy(point.$2)))
+            .toList(),
+        color: fill,
+        blend: fill.a == 0 ? img.BlendMode.direct : img.BlendMode.alpha,
+      );
+  void roundedRect(
+      num left, num top, num right, num bottom, num radius, img.Color fill) {
+    // Transparent rounded fills are alpha-blended as no-ops by package:image.
+    // Clear counters directly; their squared inner corners suit the athletic
+    // block style while the outer silhouette retains subtle rounding.
+    img.fillRect(layer,
+        x1: sx(left),
+        y1: sy(top),
+        x2: sx(right),
+        y2: sy(bottom),
+        radius: fill.a == 0 ? 0 : radius * scale,
+        color: fill,
+        alphaBlend: fill.a != 0);
   }
-  img.compositeImage(output, shadow, dstX: x + 7, dstY: y + 8);
-  img.compositeImage(output, scaled, dstX: x, dstY: y);
-  return output;
+
+  switch (digit) {
+    case '0':
+      roundedRect(5, 0, 155, 260, 22, color);
+      roundedRect(52, 45, 108, 215, 10, clear);
+      break;
+    case '1':
+      polygon([
+        (18, 53),
+        (80, 0),
+        (126, 0),
+        (126, 215),
+        (153, 215),
+        (153, 260),
+        (36, 260),
+        (36, 215),
+        (78, 215),
+        (78, 61),
+        (45, 86)
+      ], color);
+      break;
+    case '2':
+      polygon([
+        (8, 42),
+        (38, 5),
+        (126, 5),
+        (153, 34),
+        (153, 102),
+        (57, 214),
+        (153, 214),
+        (153, 260),
+        (8, 260),
+        (8, 204),
+        (106, 91),
+        (106, 55),
+        (98, 48),
+        (55, 48),
+        (55, 82),
+        (8, 82)
+      ], color);
+      break;
+    case '3':
+      polygon([
+        (8, 5),
+        (125, 5),
+        (153, 33),
+        (153, 101),
+        (126, 130),
+        (153, 158),
+        (153, 230),
+        (124, 260),
+        (8, 260),
+        (8, 215),
+        (101, 215),
+        (107, 207),
+        (107, 159),
+        (99, 151),
+        (53, 151),
+        (53, 108),
+        (99, 108),
+        (107, 99),
+        (107, 57),
+        (100, 49),
+        (8, 49)
+      ], color);
+      break;
+    case '4':
+      polygon([
+        (8, 0),
+        (56, 0),
+        (56, 105),
+        (105, 105),
+        (105, 0),
+        (153, 0),
+        (153, 260),
+        (105, 260),
+        (105, 150),
+        (8, 150)
+      ], color);
+      break;
+    case '5':
+      polygon([
+        (8, 5),
+        (153, 5),
+        (153, 50),
+        (55, 50),
+        (55, 103),
+        (124, 103),
+        (153, 132),
+        (153, 230),
+        (124, 260),
+        (8, 260),
+        (8, 215),
+        (101, 215),
+        (107, 207),
+        (107, 156),
+        (99, 148),
+        (8, 148)
+      ], color);
+      break;
+    case '6':
+      roundedRect(5, 0, 155, 260, 22, color);
+      roundedRect(52, 45, 155, 102, 8, clear);
+      roundedRect(52, 145, 108, 215, 8, clear);
+      break;
+    case '7':
+      polygon([
+        (5, 0),
+        (155, 0),
+        (155, 48),
+        (98, 260),
+        (48, 260),
+        (105, 48),
+        (5, 48)
+      ], color);
+      break;
+    case '8':
+      roundedRect(5, 0, 155, 260, 22, color);
+      roundedRect(52, 43, 108, 105, 8, clear);
+      roundedRect(52, 153, 108, 217, 8, clear);
+      break;
+    case '9':
+      roundedRect(5, 0, 155, 260, 22, color);
+      roundedRect(52, 45, 108, 112, 8, clear);
+      roundedRect(5, 157, 108, 215, 8, clear);
+      break;
+  }
 }
 
 img.Image _legacyIcon(img.Image foreground) {
@@ -219,8 +364,15 @@ img.Image _legacyIcon(img.Image foreground) {
     }
   }
   img.compositeImage(output, foreground);
-  return img.quantize(output, numberOfColors: 192);
+  return output;
 }
+
+img.Image _resize(img.Image source, int size) => img.copyResize(
+      source,
+      width: size,
+      height: size,
+      interpolation: img.Interpolation.average,
+    );
 
 img.Image _monochrome(img.Image foreground) {
   final output = img.Image.from(foreground);
@@ -245,7 +397,8 @@ void _validateSafeArea(img.Image foreground, String number) {
     }
   }
   final margin = (foreground.width * .12).round();
-  if (minX < margin || minY < margin ||
+  if (minX < margin ||
+      minY < margin ||
       maxX >= foreground.width - margin ||
       maxY >= foreground.height - margin) {
     throw StateError('Jersey $number exceeds the adaptive-icon safe area.');

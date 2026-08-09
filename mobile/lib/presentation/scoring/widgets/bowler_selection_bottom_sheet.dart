@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cricket_scoring_engine/cricket_scoring_engine.dart';
 import '../../../core/theme.dart';
+import '../../../core/utils/player_sorting.dart';
 
 class BowlerSelectionBottomSheet extends StatefulWidget {
   final MatchState matchState;
@@ -11,6 +12,7 @@ class BowlerSelectionBottomSheet extends StatefulWidget {
   final Future<bool> Function(String newBowlerId, String? reason)
       onBowlerSelected;
   final VoidCallback? onAddNewBowler;
+  final Future<bool> Function()? onUndoLastBall;
 
   const BowlerSelectionBottomSheet({
     super.key,
@@ -21,6 +23,7 @@ class BowlerSelectionBottomSheet extends StatefulWidget {
     this.isMidOver = false,
     required this.onBowlerSelected,
     this.onAddNewBowler,
+    this.onUndoLastBall,
   });
 
   @override
@@ -48,6 +51,7 @@ class _BowlerSelectionBottomSheetState
             event.overNumber == currentOver - 1)
         .map((event) => event.bowlerId)
         .toSet();
+    final displayedBowlers = sortPlayersByName(widget.bowlingTeam.players);
 
     final eligibleCount = widget.bowlingTeam.players.where((player) {
       if (!player.isAvailable || !player.isEligibleBowler) return false;
@@ -113,6 +117,24 @@ class _BowlerSelectionBottomSheetState
                 ],
               ),
               const SizedBox(height: 12),
+              if (!widget.isMidOver && widget.onUndoLastBall != null) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    key: const ValueKey('next-bowler-undo-last-ball'),
+                    onPressed: () async {
+                      final undone = await widget.onUndoLastBall!();
+                      if (undone && context.mounted) {
+                        setState(() => _allowPop = true);
+                        Navigator.pop(context);
+                      }
+                    },
+                    icon: const Icon(Icons.undo),
+                    label: const Text('UNDO LAST BALL'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
               if (widget.isMidOver) ...[
                 const Text('Reason for mid-over change:',
                     style: TextStyle(fontWeight: FontWeight.w600)),
@@ -194,7 +216,7 @@ class _BowlerSelectionBottomSheetState
                 ),
                 const SizedBox(height: 8),
               ],
-              ...widget.bowlingTeam.players.map((player) {
+              ...displayedBowlers.map((player) {
                 final card = bowlerCards.firstWhere(
                   (c) => c.playerId == player.id,
                   orElse: () => BowlerScorecard(

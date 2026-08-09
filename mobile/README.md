@@ -1,4 +1,4 @@
-# cricket_scorer
+# TurfScore
 
 A new Flutter project.
 
