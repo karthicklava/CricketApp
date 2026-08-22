@@ -64,6 +64,9 @@ class MatchRepository {
     String? matchTimeZone,
     String? tossWinnerTeamId,
     String? tossDecision,
+    String? tossCallingTeamId,
+    String? tossCall,
+    String? coinResult,
     String? teamASquadJson,
     String? teamBSquadJson,
     String? teamACaptainId,
@@ -107,6 +110,12 @@ class MatchRepository {
         );
       }
     }
+    final existing = await _db.getMatchById(id);
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final createdAtValue = existing?.createdAt ?? now;
+    final startedAtValue = startedAt ??
+        (status == 'live' ? (existing?.startedAt ?? now) : existing?.startedAt);
+
     await _db.createMatch(MatchesTableCompanion(
       id: Value(id),
       matchName: Value(matchName),
@@ -120,11 +129,13 @@ class MatchRepository {
       maxOversWasManuallyEdited: Value(maxOversWasManuallyEdited),
       venueName: Value(venueName),
       scheduledAt: Value(scheduledAt),
-      startedAt: Value(startedAt ??
-          (status == 'live' ? DateTime.now().millisecondsSinceEpoch : null)),
+      startedAt: Value(startedAtValue),
       matchTimeZone: Value(matchTimeZone ?? DateTime.now().timeZoneName),
       tossWinnerTeamId: Value(tossWinnerTeamId),
       tossDecision: Value(tossDecision),
+      tossCallingTeamId: Value(tossCallingTeamId),
+      tossCall: Value(tossCall),
+      coinResult: Value(coinResult),
       teamASquadJson: Value(teamASquadJson),
       teamBSquadJson: Value(teamBSquadJson),
       teamACaptainId: Value(teamACaptainId),
@@ -134,7 +145,8 @@ class MatchRepository {
       setupDraftJson: Value(setupDraftJson),
       status: Value(status),
       currentScorerDeviceId: Value(currentScorerDeviceId),
-      createdAt: Value(DateTime.now().millisecondsSinceEpoch),
+      createdAt: Value(createdAtValue),
+      updatedAt: Value(now),
     ));
   }
 
@@ -144,6 +156,8 @@ class MatchRepository {
       _db.hasActiveMatch(excludingMatchId: excludingMatchId);
 
   Future<List<MatchesTableData>> getDraftMatches() => _db.getDraftMatches();
+
+  Future<void> deleteDraftMatch(String matchId) => _db.deleteDraftMatch(matchId);
 
   Future<List<MatchesTableData>> getRecentMatches() => _db.getRecentMatches();
 
@@ -630,6 +644,9 @@ class MatchRepository {
       teamB: teamB,
       tossWinnerTeamId: tossWinner,
       tossDecision: tossDecision,
+      tossCallingTeamId: m.tossCallingTeamId,
+      tossCall: m.tossCall,
+      coinResult: m.coinResult,
       openingStrikerId: p1,
       openingNonStrikerId: p2,
       openingBowlerId: b1,

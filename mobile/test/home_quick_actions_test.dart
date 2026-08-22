@@ -18,8 +18,8 @@ void main() {
 
   test('quick actions share one icon container and semantic component', () {
     expect(source, contains('Widget _buildActionCard'));
-    expect(source, contains('radius: 24'));
-    expect(source, contains('Icon(icon, color: color, size: 28)'));
+    expect(source, contains('radius: 20'));
+    expect(source, contains('Icon(icon, color: color, size: 22)'));
     expect(source, contains('Semantics('));
     expect(source, contains('label: title'));
   });

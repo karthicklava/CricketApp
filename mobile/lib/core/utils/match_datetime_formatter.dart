@@ -77,6 +77,25 @@ class MatchDateTimeFormatter {
 
   static String dateTime(DateTime value) => '${date(value)}, ${time(value)}';
 
+  static String smartUpdatedTime(DateTime value) {
+    final now = DateTime.now();
+    final isToday =
+        now.year == value.year && now.month == value.month && now.day == value.day;
+    final yesterday = now.subtract(const Duration(days: 1));
+    final isYesterday = yesterday.year == value.year &&
+        yesterday.month == value.month &&
+        yesterday.day == value.day;
+
+    final t = time(value);
+    if (isToday) {
+      return 'Today • $t';
+    } else if (isYesterday) {
+      return 'Yesterday • $t';
+    } else {
+      return '${_months[value.month - 1]} ${value.day} • $t';
+    }
+  }
+
   static List<String> pdfLines(MatchState state, MatchTimestampSummary value) {
     if (!value.hasPersistedMatchTime) {
       return [

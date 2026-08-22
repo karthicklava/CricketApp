@@ -3,8 +3,6 @@
   "maximum": 99,
   "variantCount": 99,
   "style": "shield",
-  "nativeSourceSize": 1254,
-  "previewSize": 512,
-  "masterAsset": "assets/branding/launcher_shield_foreground.png",
+  "nativeSourceSize": 1024,
   "previewIsNativeSource": false
 }

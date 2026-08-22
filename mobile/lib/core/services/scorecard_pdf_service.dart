@@ -117,6 +117,14 @@ class ScorecardPdfService {
                       ),
                     ),
                   ),
+                  pw.SizedBox(height: 4),
+                  pw.Text(
+                    _formatPdfTossSummary(matchState),
+                    style: const pw.TextStyle(
+                      fontSize: 10,
+                      color: PdfColors.white,
+                    ),
+                  ),
                   if (matchState.result != null) ...[
                     pw.SizedBox(height: 10),
                     pw.Container(
@@ -517,5 +525,21 @@ class ScorecardPdfService {
         );
       }
     }
+  }
+
+  static String _formatPdfTossSummary(MatchState state) {
+    final winnerName = state.tossWinnerTeamId == state.teamA.id
+        ? state.teamA.name
+        : (state.tossWinnerTeamId == state.teamB.id
+            ? state.teamB.name
+            : 'Unknown Team');
+    final decisionText = state.tossDecision.toUpperCase() == 'BAT'
+        ? 'elected to bat'
+        : 'elected to bowl';
+    String summary = 'Toss: $winnerName won toss & $decisionText';
+    if (state.tossCall != null && state.coinResult != null) {
+      summary += ' (Called ${state.tossCall} · Landed ${state.coinResult})';
+    }
+    return summary;
   }
 }

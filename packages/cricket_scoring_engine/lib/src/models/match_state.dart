@@ -89,6 +89,9 @@ class MatchState {
   final Team teamB;
   final String tossWinnerTeamId;
   final String tossDecision; // 'BAT' or 'BOWL'
+  final String? tossCallingTeamId;
+  final String? tossCall; // 'HEADS' or 'TAILS'
+  final String? coinResult; // 'HEADS' or 'TAILS'
   final MatchStatus status;
   final int currentInningsIndex;
   final List<InningsState> innings;
@@ -123,6 +126,9 @@ class MatchState {
     required this.teamB,
     required this.tossWinnerTeamId,
     required this.tossDecision,
+    this.tossCallingTeamId,
+    this.tossCall,
+    this.coinResult,
     this.status = MatchStatus.draft,
     this.currentInningsIndex = 0,
     required this.innings,
@@ -176,6 +182,9 @@ class MatchState {
     Team? teamB,
     String? tossWinnerTeamId,
     String? tossDecision,
+    String? tossCallingTeamId,
+    String? tossCall,
+    String? coinResult,
     MatchStatus? status,
     int? currentInningsIndex,
     List<InningsState>? innings,
@@ -212,6 +221,9 @@ class MatchState {
       teamB: teamB ?? this.teamB,
       tossWinnerTeamId: tossWinnerTeamId ?? this.tossWinnerTeamId,
       tossDecision: tossDecision ?? this.tossDecision,
+      tossCallingTeamId: tossCallingTeamId ?? this.tossCallingTeamId,
+      tossCall: tossCall ?? this.tossCall,
+      coinResult: coinResult ?? this.coinResult,
       status: status ?? this.status,
       currentInningsIndex: currentInningsIndex ?? this.currentInningsIndex,
       innings: innings ?? this.innings,
@@ -256,6 +268,9 @@ class MatchState {
         'teamB': teamB.toJson(),
         'tossWinnerTeamId': tossWinnerTeamId,
         'tossDecision': tossDecision,
+        'tossCallingTeamId': tossCallingTeamId,
+        'tossCall': tossCall,
+        'coinResult': coinResult,
         'status': status.name,
         'currentInningsIndex': currentInningsIndex,
         'innings': innings.map((item) => item.toJson()).toList(),
@@ -294,6 +309,9 @@ class MatchState {
         teamB: Team.fromJson(json['teamB'] as Map<String, dynamic>),
         tossWinnerTeamId: json['tossWinnerTeamId'] as String,
         tossDecision: json['tossDecision'] as String,
+        tossCallingTeamId: json['tossCallingTeamId'] as String?,
+        tossCall: json['tossCall'] as String?,
+        coinResult: json['coinResult'] as String?,
         status: MatchStatus.values.firstWhere(
           (value) => value.name == json['status'],
           orElse: () => MatchStatus.live,

@@ -26,6 +26,25 @@ class _CompletedMatchDetailsScreenState
   int _selectedInnings = 0;
   MatchState get matchState => widget.matchState;
 
+  String _formatTossDetails(MatchState state) {
+    final winnerName = state.tossWinnerTeamId == state.teamA.id
+        ? state.teamA.name
+        : (state.tossWinnerTeamId == state.teamB.id
+            ? state.teamB.name
+            : 'Unknown');
+    final decision = state.tossDecision.toUpperCase() == 'BAT' ? 'bat' : 'bowl';
+    String text = '$winnerName won toss & elected to $decision';
+    if (state.tossCall != null && state.coinResult != null) {
+      final callingName = state.tossCallingTeamId == state.teamA.id
+          ? state.teamA.name
+          : (state.tossCallingTeamId == state.teamB.id
+              ? state.teamB.name
+              : winnerName);
+      text += ' ($callingName called ${state.tossCall} · Coin: ${state.coinResult})';
+    }
+    return text;
+  }
+
   @override
   Widget build(BuildContext context) {
     final pagePadding = MediaQuery.sizeOf(context).width < 360 ? 8.0 : 16.0;
@@ -102,6 +121,11 @@ class _CompletedMatchDetailsScreenState
                       style:
                           const TextStyle(color: Colors.white70, fontSize: 12),
                     ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatTossDetails(matchState),
+                    style: const TextStyle(color: Colors.white70, fontSize: 11.5, fontWeight: FontWeight.w500),
+                  ),
                   const SizedBox(height: 8),
                   if (res != null) ...[
                     Container(

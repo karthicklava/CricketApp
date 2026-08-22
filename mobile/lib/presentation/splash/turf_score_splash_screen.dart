@@ -227,7 +227,13 @@ class _TurfScoreSplashScreenState extends State<TurfScoreSplashScreen>
                               animation: logo,
                               builder: (context, child) => Container(
                                 key: const ValueKey('splash-logo-glow'),
-                                padding: EdgeInsets.all(compact ? 10 : 14),
+                                padding: EdgeInsets.fromLTRB(
+                                  compact ? 12 : 16,
+                                  compact ? 12 : 16,
+                                  compact ? 12 : 16,
+                                  compact ? 18 : 24,
+                                ),
+                                clipBehavior: Clip.none,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   boxShadow: [

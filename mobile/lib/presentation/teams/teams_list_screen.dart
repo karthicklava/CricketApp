@@ -5,6 +5,7 @@ import '../../data/repositories/team_repository.dart';
 import '../../data/local/database.dart';
 import '../../core/theme.dart';
 import '../common/widgets/sports_ui.dart';
+import 'widgets/team_card.dart';
 
 class TeamsListScreen extends ConsumerStatefulWidget {
   const TeamsListScreen({super.key});
@@ -105,117 +106,85 @@ class _TeamsListScreenState extends ConsumerState<TeamsListScreen> {
                                 .read(teamRepositoryProvider)
                                 .getTeamPlayers(team.id),
                             builder: (context, snapshot) {
-                              if (!snapshot.hasData) {
-                                return const Card(
-                                  margin: EdgeInsets.only(bottom: 10),
-                                  child: SizedBox(
-                                    height: 76,
-                                    child: Center(
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                  ),
-                                );
-                              }
                               final players = snapshot.data ?? [];
-                              final captain = players.firstWhere(
-                                (p) => p.isCaptain,
-                                orElse: () => PlayersTableData(
-                                  id: '',
-                                  name: 'Not assigned',
-                                  role: '',
-                                  battingStyle: '',
-                                  bowlingStyle: '',
-                                  isCaptain: false,
-                                  isWicketKeeper: false,
-                                  createdAt: 0,
-                                  syncStatus: '',
-                                ),
-                              );
-
-                              return Card(
-                                margin: const EdgeInsets.only(bottom: 10),
-                                child: ListTile(
-                                  onTap: () => context.push('/teams/details',
-                                      extra: team),
-                                  leading: CircleAvatar(
-                                    backgroundColor: teamColor,
-                                    child: Text(
-                                      team.shortName,
-                                      style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12),
+                              return TeamCard(
+                                team: team,
+                                players: players,
+                                onTap: () => context.push('/teams/details',
+                                    extra: team),
+                                customActions: [
+                                  IconButton(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(
+                                      minWidth: 36,
+                                      minHeight: 36,
                                     ),
-                                  ),
-                                  title: Text(team.name,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold)),
-                                  subtitle: Text(
-                                    players.isEmpty
-                                        ? '0 Players • Setup incomplete'
-                                        : '${players.length} Players • Captain: ${captain.name}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: players.isEmpty
-                                          ? Colors.orange.shade900
-                                          : null,
-                                      fontWeight: players.isEmpty
-                                          ? FontWeight.w600
-                                          : null,
+                                    icon: const Icon(
+                                      Icons.person_add_rounded,
+                                      color: AppColors.primary,
+                                      size: 20,
                                     ),
+                                    tooltip: 'Add Players',
+                                    onPressed: () async {
+                                      await context.push(
+                                        '/teams/add-players/${team.id}',
+                                      );
+                                      _loadTeams();
+                                    },
                                   ),
-                                  trailing: players.isEmpty
-                                      ? TextButton.icon(
-                                          icon: const Icon(Icons.person_add),
-                                          label: const Text('Add Players'),
-                                          onPressed: () async {
-                                            await context.push(
-                                              '/teams/add-players/${team.id}',
-                                            );
-                                            _loadTeams();
-                                          },
-                                        )
-                                      : Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            IconButton(
-                                              icon: const Icon(Icons.edit,
-                                                  color: Colors.blue),
-                                              onPressed: () => context.push(
-                                                  '/teams/create?id=${team.id}'),
-                                            ),
-                                            PopupMenuButton<String>(
-                                              onSelected: (val) async {
-                                                if (val == 'archive') {
-                                                  await ref
-                                                      .read(
-                                                          teamRepositoryProvider)
-                                                      .archiveTeam(team.id);
-                                                  _loadTeams();
-                                                } else if (val == 'delete') {
-                                                  await ref
-                                                      .read(
-                                                          teamRepositoryProvider)
-                                                      .deleteTeam(team.id);
-                                                  _loadTeams();
-                                                }
-                                              },
-                                              itemBuilder: (ctx) => [
-                                                const PopupMenuItem(
-                                                    value: 'archive',
-                                                    child:
-                                                        Text('Archive Team')),
-                                                const PopupMenuItem(
-                                                    value: 'delete',
-                                                    child: Text('Delete Team',
-                                                        style: TextStyle(
-                                                            color:
-                                                                Colors.red))),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                ),
+                                  IconButton(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(
+                                      minWidth: 36,
+                                      minHeight: 36,
+                                    ),
+                                    icon: const Icon(
+                                      Icons.edit_rounded,
+                                      color: AppColors.primary,
+                                      size: 20,
+                                    ),
+                                    tooltip: 'Edit Team',
+                                    onPressed: () => context
+                                        .push('/teams/create?id=${team.id}'),
+                                  ),
+                                  PopupMenuButton<String>(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(
+                                      minWidth: 36,
+                                      minHeight: 36,
+                                    ),
+                                    icon: const Icon(
+                                      Icons.more_vert_rounded,
+                                      color: Color(0xFF6B7280),
+                                      size: 20,
+                                    ),
+                                    onSelected: (val) async {
+                                      if (val == 'archive') {
+                                        await ref
+                                            .read(teamRepositoryProvider)
+                                            .archiveTeam(team.id);
+                                        _loadTeams();
+                                      } else if (val == 'delete') {
+                                        await ref
+                                            .read(teamRepositoryProvider)
+                                            .deleteTeam(team.id);
+                                        _loadTeams();
+                                      }
+                                    },
+                                    itemBuilder: (ctx) => [
+                                      const PopupMenuItem(
+                                        value: 'archive',
+                                        child: Text('Archive Team'),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'delete',
+                                        child: Text('Delete Team',
+                                            style:
+                                                TextStyle(color: Colors.red)),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               );
                             },
                           );

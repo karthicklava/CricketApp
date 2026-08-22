@@ -111,6 +111,56 @@ class MatchResultView extends ConsumerWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 16),
+
+            // Toss Details Card
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFE8F5E9),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.monetization_on_rounded,
+                          color: Color(0xFF0F5132), size: 24),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'DIGITAL TOSS RESULT',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF0F5132),
+                              letterSpacing: 1.0,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _formatTossResultText(matchState),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 20),
             if (!manuallyEnded)
               MatchAwardsSection(
@@ -206,6 +256,25 @@ class MatchResultView extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  String _formatTossResultText(MatchState state) {
+    final winnerName = state.tossWinnerTeamId == state.teamA.id
+        ? state.teamA.name
+        : (state.tossWinnerTeamId == state.teamB.id
+            ? state.teamB.name
+            : 'Unknown Team');
+    final decision = state.tossDecision.toUpperCase() == 'BAT' ? 'bat' : 'bowl';
+    String text = '$winnerName won the toss and elected to $decision.';
+    if (state.tossCall != null && state.coinResult != null) {
+      final callingName = state.tossCallingTeamId == state.teamA.id
+          ? state.teamA.name
+          : (state.tossCallingTeamId == state.teamB.id
+              ? state.teamB.name
+              : winnerName);
+      text += ' ($callingName called ${state.tossCall} · Coin: ${state.coinResult})';
+    }
+    return text;
   }
 
   Future<void> _reopen(BuildContext context, WidgetRef ref) async {

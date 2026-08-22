@@ -19,7 +19,11 @@ import 'presentation/teams/create_team_screen.dart';
 import 'presentation/teams/teams_list_screen.dart';
 import 'presentation/teams/team_details_screen.dart';
 import 'presentation/teams/add_players_screen.dart';
+import 'presentation/teams/widgets/team_card.dart';
 import 'presentation/matches/match_setup_wizard.dart';
+import 'presentation/matches/widgets/draft_match_card.dart';
+import 'presentation/common/widgets/draft_delete_dialog.dart';
+import 'core/utils/match_datetime_formatter.dart';
 import 'presentation/demo/demo_scoring_screen.dart';
 import 'presentation/matches/completed_match_details_screen.dart';
 import 'presentation/matches/pdf_preview_screen.dart';
@@ -490,7 +494,7 @@ class HomeScreen extends ConsumerWidget {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         children: [
           // Active Match / Resume Banner if present
           if (homeState.activeMatch != null) ...[
@@ -571,9 +575,13 @@ class HomeScreen extends ConsumerWidget {
 
             // Display Created Team Card
             if (homeState.teams.isNotEmpty) ...[
-              const Text('My Teams (1)',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
+              _buildSectionHeader(
+                title: 'My Teams',
+                count: homeState.teams.length,
+                showViewAll: homeState.teams.length > 3,
+                onViewAll: () => context.go('/teams'),
+              ),
+              const SizedBox(height: 10),
               _buildTeamCard(context, ref, homeState.teams.first),
               const SizedBox(height: 16),
             ],
@@ -644,19 +652,13 @@ class HomeScreen extends ConsumerWidget {
             const SizedBox(height: 24),
 
             // Teams Overview
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('My Teams (${homeState.teams.length})',
-                    style: const TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold)),
-                TextButton(
-                  onPressed: () => context.push('/teams'),
-                  child: const Text('View All'),
-                ),
-              ],
+            _buildSectionHeader(
+              title: 'My Teams',
+              count: homeState.teams.length,
+              showViewAll: homeState.teams.length > 3,
+              onViewAll: () => context.go('/teams'),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             ...homeState.teams
                 .take(3)
                 .map((team) => _buildTeamCard(context, ref, team)),
@@ -665,18 +667,38 @@ class HomeScreen extends ConsumerWidget {
 
           // Draft Matches Section
           if (homeState.activeMatch == null && homeState.drafts.isNotEmpty) ...[
-            const Text('Draft Matches',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            ...homeState.drafts.map((m) => Card(
-                  child: ListTile(
-                    title: Text(m.matchName ?? 'Continue Match Setup'),
-                    subtitle: Text('Format: ${m.format.toUpperCase()}'),
-                    trailing:
-                        const Icon(Icons.play_arrow, color: AppColors.primary),
-                    onTap: () =>
-                        context.push('/matches/create?draftId=${m.id}'),
-                  ),
+            _buildSectionHeader(
+              title: 'Draft Matches',
+              count: homeState.drafts.length,
+              showViewAll: homeState.drafts.length > 2,
+              onViewAll: () => context.go('/matches'),
+            ),
+            const SizedBox(height: 10),
+            ...homeState.drafts.take(2).map((m) => DraftMatchCard(
+                  key: ValueKey('home-draft-card-${m.id}'),
+                  match: m,
+                  onResume: () => context.push('/matches/create?draftId=${m.id}'),
+                  onDelete: () async {
+                    try {
+                      await ref
+                          .read(matchRepositoryProvider)
+                          .deleteDraftMatch(m.id);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Draft deleted'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to delete draft: $e')),
+                        );
+                      }
+                    }
+                  },
                 )),
             const SizedBox(height: 24),
           ],
@@ -684,29 +706,98 @@ class HomeScreen extends ConsumerWidget {
           // Recent Matches Section
           if (homeState.stage == HomeStage.readyForMatch ||
               homeState.stage == HomeStage.matchInProgress) ...[
-            const Text('Recent Matches',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            homeState.recentMatches.isEmpty
-                ? const Card(
-                    child: Padding(
-                      padding: EdgeInsets.all(20.0),
-                      child: Center(
-                          child: Text('No completed matches recorded yet.',
-                              style: TextStyle(color: Colors.grey))),
+            Builder(
+              builder: (context) {
+                final sortedRecent =
+                    List<MatchesTableData>.from(homeState.recentMatches)
+                      ..sort((a, b) {
+                        final timeA = a.endedAt ?? a.startedAt ?? a.createdAt;
+                        final timeB = b.endedAt ?? b.startedAt ?? b.createdAt;
+                        return timeB.compareTo(timeA);
+                      });
+                final hasMoreThan3 = sortedRecent.length > 3;
+                final displayMatches = sortedRecent.take(3).toList();
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionHeader(
+                      title: 'Recent Matches',
+                      showViewAll: hasMoreThan3,
+                      onViewAll: () => context.go('/matches'),
                     ),
-                  )
-                : Column(
-                    children: homeState.recentMatches
-                        .map((m) => Card(
-                              child: ListTile(
-                                title: Text(m.matchName ?? 'Match ${m.id}'),
-                                subtitle:
-                                    Text('Status: ${m.status.toUpperCase()}'),
+                    const SizedBox(height: 10),
+                    if (sortedRecent.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 24, horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFE5E7EB)),
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.08),
+                                shape: BoxShape.circle,
                               ),
-                            ))
-                        .toList(),
-                  ),
+                              child: const Icon(
+                                Icons.sports_cricket_rounded,
+                                color: AppColors.primary,
+                                size: 28,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'No matches yet',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF111827),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Create your first match and start scoring.',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF6B7280),
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 14),
+                            OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.primary,
+                                side:
+                                    const BorderSide(color: AppColors.primary),
+                                shape: const StadiumBorder(),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 8),
+                              ),
+                              icon: const Icon(Icons.add_rounded, size: 18),
+                              label: const Text(
+                                'Create Match',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                              onPressed: () => context.push('/matches/create'),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      ...displayMatches
+                          .map((m) => _buildRecentMatchCard(context, m)),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 24),
           ],
         ],
       ),
@@ -715,65 +806,16 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildTeamCard(
       BuildContext context, WidgetRef ref, TeamsTableData team) {
-    final teamColor = team.color != null
-        ? Color(int.parse(team.color!.replaceFirst('#', '0xFF')))
-        : AppColors.primary;
-
     return FutureBuilder<List<PlayersTableData>>(
       future: ref.read(teamRepositoryProvider).getTeamPlayers(team.id),
       builder: (context, snapshot) {
         final players = snapshot.data ?? [];
-        final captain = players.firstWhere(
-          (p) => p.isCaptain,
-          orElse: () => PlayersTableData(
-            id: '',
-            name: 'Not assigned',
-            role: '',
-            battingStyle: '',
-            bowlingStyle: '',
-            isCaptain: false,
-            isWicketKeeper: false,
-            createdAt: 0,
-            syncStatus: '',
-          ),
-        );
-
-        return AppCard(
-          padding: EdgeInsets.zero,
-          child: ListTile(
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            onTap: () => context.push('/teams/details', extra: team),
-            leading: CircleAvatar(
-              backgroundColor: teamColor,
-              child: Text(team.shortName,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12)),
-            ),
-            title: Text(team.name,
-                style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text(
-                '${players.length} Players • Captain: ${captain.name}',
-                style: const TextStyle(fontSize: 12)),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.person_add, color: AppColors.primary),
-                  tooltip: 'Add Players',
-                  onPressed: () =>
-                      context.push('/teams/add-players/${team.id}'),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.blue),
-                  tooltip: 'Edit Team',
-                  onPressed: () => context.push('/teams/create?id=${team.id}'),
-                ),
-              ],
-            ),
-          ),
+        return TeamCard(
+          team: team,
+          players: players,
+          onTap: () => context.push('/teams/details', extra: team),
+          onAddPlayers: () => context.push('/teams/add-players/${team.id}'),
+          onEditTeam: () => context.push('/teams/create?id=${team.id}'),
         );
       },
     );
@@ -789,18 +831,200 @@ class HomeScreen extends ConsumerWidget {
       label: title,
       child: AppCard(
         onTap: onTap,
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
         child: Column(
           children: [
             CircleAvatar(
                 backgroundColor: color.withValues(alpha: 0.1),
-                radius: 24,
-                child: Icon(icon, color: color, size: 28)),
-            const SizedBox(height: 12),
+                radius: 20,
+                child: Icon(icon, color: color, size: 22)),
+            const SizedBox(height: 8),
             Text(title,
                 style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader({
+    required String title,
+    int? count,
+    required bool showViewAll,
+    required VoidCallback onViewAll,
+  }) {
+    return Row(
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF111827),
+          ),
+        ),
+        if (count != null) ...[
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3F4F6),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '$count',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF6B7280),
+              ),
+            ),
+          ),
+        ],
+        const Spacer(),
+        if (showViewAll)
+          InkWell(
+            onTap: onViewAll,
+            borderRadius: BorderRadius.circular(6),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'View All',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  SizedBox(width: 2),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 14,
+                    color: AppColors.primary,
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildRecentMatchCard(BuildContext context, MatchesTableData m) {
+    final dateMillis = m.endedAt ?? m.startedAt ?? m.createdAt;
+    final dateStr = MatchDateTimeFormatter.date(
+      DateTime.fromMillisecondsSinceEpoch(dateMillis),
+    );
+    final destination = MatchDestinationResolver.resolveStatus(m.status);
+    final isCompleted = destination == MatchDestination.completedScorecard;
+    final statusLabel = m.status == 'completed'
+        ? 'Completed'
+        : m.status == 'noResult'
+            ? 'No result'
+            : m.resultType == 'teamForfeit'
+                ? 'Forfeit'
+                : m.status;
+
+    final statusTone = isCompleted
+        ? StatusBadgeTone.success
+        : m.status == 'abandoned' || m.status == 'cancelled'
+            ? StatusBadgeTone.danger
+            : StatusBadgeTone.warning;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          key: ValueKey('recent-match-card-${m.id}'),
+          onTap: () => context.push(
+            MatchDestinationResolver.routeFor(
+              matchId: m.id,
+              status: m.status,
+            ),
+          ),
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        m.matchName ?? 'Match ${m.id}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: Color(0xFF111827),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    StatusBadge(
+                      label: statusLabel,
+                      tone: statusTone,
+                    ),
+                  ],
+                ),
+                if (m.resultText != null && m.resultText!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    m.resultText!,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Text(
+                      '${m.format.toUpperCase()} • ${m.totalOvers != null ? "${m.totalOvers} Overs • " : ""}$dateStr',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                    if (m.venueName != null && m.venueName!.trim().isNotEmpty) ...[
+                      const Spacer(),
+                      Flexible(
+                        child: Text(
+                          m.venueName!.trim(),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF9CA3AF),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -941,6 +1165,37 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                         itemCount: matches.length,
                         itemBuilder: (ctx, idx) {
                           final m = matches[idx];
+                          if (m.status == 'draft') {
+                            return DraftMatchCard(
+                              key: ValueKey('draft-list-card-${m.id}'),
+                              match: m,
+                              onResume: () =>
+                                  context.push('/matches/create?draftId=${m.id}'),
+                              onDelete: () async {
+                                try {
+                                  await ref
+                                      .read(matchRepositoryProvider)
+                                      .deleteDraftMatch(m.id);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Draft deleted'),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                          content:
+                                              Text('Failed to delete draft: $e')),
+                                    );
+                                  }
+                                }
+                              },
+                            );
+                          }
                           final dateStr =
                               DateTime.fromMillisecondsSinceEpoch(m.createdAt)
                                   .toIso8601String()
@@ -1021,6 +1276,62 @@ class _MatchesScreenState extends ConsumerState<MatchesScreen> {
                                               label: statusLabel,
                                               tone: statusTone,
                                             ),
+                                            if (m.status == 'draft') ...[
+                                              const SizedBox(width: 4),
+                                              PopupMenuButton<String>(
+                                                icon: const Icon(Icons.more_vert, size: 20),
+                                                padding: EdgeInsets.zero,
+                                                constraints: const BoxConstraints(),
+                                                onSelected: (action) async {
+                                                  if (action == 'resume') {
+                                                    context.push('/matches/create?draftId=${m.id}');
+                                                  } else if (action == 'delete') {
+                                                    final confirm = await showDeleteDraftConfirmationDialog(
+                                                      context,
+                                                      matchName: m.matchName ?? 'Draft Match',
+                                                    );
+                                                    if (confirm) {
+                                                      try {
+                                                        await ref.read(matchRepositoryProvider).deleteDraftMatch(m.id);
+                                                        if (context.mounted) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                            const SnackBar(content: Text('Draft match deleted.')),
+                                                          );
+                                                        }
+                                                      } catch (e) {
+                                                        if (context.mounted) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                            SnackBar(content: Text('Failed to delete draft: $e')),
+                                                          );
+                                                        }
+                                                      }
+                                                    }
+                                                  }
+                                                },
+                                                itemBuilder: (ctx) => [
+                                                  const PopupMenuItem(
+                                                    value: 'resume',
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(Icons.play_arrow, color: AppColors.primary),
+                                                        SizedBox(width: 8),
+                                                        Text('Resume Match'),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  PopupMenuItem(
+                                                    value: 'delete',
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(Icons.delete_outline, color: Colors.red.shade700),
+                                                        SizedBox(width: 8),
+                                                        Text('Delete Draft', style: TextStyle(color: Colors.red.shade700, fontWeight: FontWeight.bold)),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
                                           ]),
                                           Text(
                                             '${m.format.toUpperCase()} • $dateStr • ${m.venueName ?? "Local Field"}',

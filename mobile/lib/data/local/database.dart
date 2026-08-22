@@ -71,6 +71,9 @@ class MatchesTable extends Table {
   TextColumn get matchTimeZone => text().nullable()();
   TextColumn get tossWinnerTeamId => text().nullable()();
   TextColumn get tossDecision => text().nullable()(); // BAT, BOWL
+  TextColumn get tossCallingTeamId => text().nullable()();
+  TextColumn get tossCall => text().nullable()(); // HEADS, TAILS
+  TextColumn get coinResult => text().nullable()(); // HEADS, TAILS
   TextColumn get teamASquadJson => text().nullable()(); // List of player IDs
   TextColumn get teamBSquadJson => text().nullable()(); // List of player IDs
   TextColumn get teamACaptainId => text().nullable()();
@@ -86,6 +89,7 @@ class MatchesTable extends Table {
   TextColumn get stateJson => text().nullable()();
   TextColumn get setupDraftJson => text().nullable()();
   IntColumn get createdAt => integer()();
+  IntColumn get updatedAt => integer().nullable()();
   TextColumn get endReasonCode => text().nullable()();
   TextColumn get endReasonText => text().nullable()();
   TextColumn get endNote => text().nullable()();
@@ -230,7 +234,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(QueryExecutor executor) : super(executor);
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -239,32 +243,69 @@ class AppDatabase extends _$AppDatabase {
           await customStatement(_singleActiveMatchIndexSql);
         },
         onUpgrade: (m, from, to) async {
+          Future<bool> tableExists(String tableName) async {
+            final rows = await customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+              variables: [Variable.withString(tableName)],
+            ).get();
+            return rows.isNotEmpty;
+          }
+
+          Future<bool> columnExists(String tableName, String columnName) async {
+            final rows =
+                await customSelect('PRAGMA table_info($tableName)').get();
+            return rows.any((row) => row.read<String>('name') == columnName);
+          }
+
+          Future<void> safeCreateTable(TableInfo table) async {
+            final exists = await tableExists(table.actualTableName);
+            if (!exists) {
+              await m.createTable(table);
+            }
+          }
+
+          Future<void> safeAddColumn(
+              TableInfo table, GeneratedColumn column) async {
+            final exists =
+                await columnExists(table.actualTableName, column.name);
+            if (!exists) {
+              try {
+                await m.addColumn(table, column);
+              } catch (e) {
+                if (!e.toString().contains('duplicate column name')) {
+                  rethrow;
+                }
+              }
+            }
+          }
+
           if (from < 2) {
-            await m.addColumn(teamsTable, teamsTable.city);
-            await m.addColumn(teamsTable, teamsTable.color);
-            await m.addColumn(playersTable, playersTable.jerseyNumber);
-            await m.addColumn(playersTable, playersTable.role);
-            await m.addColumn(playersTable, playersTable.isCaptain);
-            await m.addColumn(playersTable, playersTable.isWicketKeeper);
-            await m.createTable(teamMembersTable);
-            await m.addColumn(matchesTable, matchesTable.matchName);
-            await m.addColumn(matchesTable, matchesTable.teamASquadJson);
-            await m.addColumn(matchesTable, matchesTable.teamBSquadJson);
+            await safeAddColumn(teamsTable, teamsTable.city);
+            await safeAddColumn(teamsTable, teamsTable.color);
+            await safeAddColumn(playersTable, playersTable.jerseyNumber);
+            await safeAddColumn(playersTable, playersTable.role);
+            await safeAddColumn(playersTable, playersTable.isCaptain);
+            await safeAddColumn(playersTable, playersTable.isWicketKeeper);
+            await safeCreateTable(teamMembersTable);
+            await safeAddColumn(matchesTable, matchesTable.matchName);
+            await safeAddColumn(matchesTable, matchesTable.teamASquadJson);
+            await safeAddColumn(matchesTable, matchesTable.teamBSquadJson);
           }
           if (from < 3) {
-            await m.addColumn(matchesTable, matchesTable.stateJson);
-            await m.addColumn(deliveriesTable, deliveriesTable.wideRuns);
-            await m.addColumn(deliveriesTable, deliveriesTable.noBallRuns);
-            await m.addColumn(deliveriesTable, deliveriesTable.byeRuns);
-            await m.addColumn(deliveriesTable, deliveriesTable.legByeRuns);
-            await m.addColumn(deliveriesTable, deliveriesTable.penaltyRuns);
-            await m.addColumn(deliveriesTable, deliveriesTable.sequenceInOver);
-            await m.createTable(scoringAuditTable);
+            await safeAddColumn(matchesTable, matchesTable.stateJson);
+            await safeAddColumn(deliveriesTable, deliveriesTable.wideRuns);
+            await safeAddColumn(deliveriesTable, deliveriesTable.noBallRuns);
+            await safeAddColumn(deliveriesTable, deliveriesTable.byeRuns);
+            await safeAddColumn(deliveriesTable, deliveriesTable.legByeRuns);
+            await safeAddColumn(deliveriesTable, deliveriesTable.penaltyRuns);
+            await safeAddColumn(
+                deliveriesTable, deliveriesTable.sequenceInOver);
+            await safeCreateTable(scoringAuditTable);
           }
           if (from < 4) {
-            await m.addColumn(teamsTable, teamsTable.defaultCaptainId);
-            await m.addColumn(matchesTable, matchesTable.teamACaptainId);
-            await m.addColumn(matchesTable, matchesTable.teamBCaptainId);
+            await safeAddColumn(teamsTable, teamsTable.defaultCaptainId);
+            await safeAddColumn(matchesTable, matchesTable.teamACaptainId);
+            await safeAddColumn(matchesTable, matchesTable.teamBCaptainId);
             await customStatement('''
               UPDATE teams_table
               SET default_captain_id = (
@@ -290,25 +331,25 @@ class AppDatabase extends _$AppDatabase {
             ''');
           }
           if (from < 5) {
-            await m.addColumn(matchesTable, matchesTable.setupDraftJson);
+            await safeAddColumn(matchesTable, matchesTable.setupDraftJson);
           }
           if (from < 6) {
-            await m.createTable(matchSquadMembersTable);
+            await safeCreateTable(matchSquadMembersTable);
             await customStatement(
               'CREATE INDEX IF NOT EXISTS idx_match_squad_team '
               'ON match_squad_members_table(match_id, team_id)',
             );
           }
           if (from < 7) {
-            await m.createTable(matchAwardsTable);
+            await safeCreateTable(matchAwardsTable);
           }
           if (from < 8) {
-            await m.addColumn(teamMembersTable, teamMembersTable.isActive);
-            await m.addColumn(teamMembersTable, teamMembersTable.joinedAt);
-            await m.addColumn(teamMembersTable, teamMembersTable.removedAt);
-            await m.addColumn(
+            await safeAddColumn(teamMembersTable, teamMembersTable.isActive);
+            await safeAddColumn(teamMembersTable, teamMembersTable.joinedAt);
+            await safeAddColumn(teamMembersTable, teamMembersTable.removedAt);
+            await safeAddColumn(
                 matchSquadMembersTable, matchSquadMembersTable.isActive);
-            await m.addColumn(
+            await safeAddColumn(
                 matchSquadMembersTable, matchSquadMembersTable.removedAt);
           }
           if (from < 9) {
@@ -326,31 +367,31 @@ class AppDatabase extends _$AppDatabase {
             await customStatement(_singleActiveMatchIndexSql);
           }
           if (from < 10) {
-            await m.addColumn(matchesTable, matchesTable.endReasonCode);
-            await m.addColumn(matchesTable, matchesTable.endReasonText);
-            await m.addColumn(matchesTable, matchesTable.endNote);
-            await m.addColumn(matchesTable, matchesTable.endedManually);
-            await m.addColumn(matchesTable, matchesTable.endedAt);
-            await m.addColumn(matchesTable, matchesTable.endedBy);
-            await m.addColumn(matchesTable, matchesTable.winnerTeamId);
-            await m.addColumn(matchesTable, matchesTable.loserTeamId);
-            await m.addColumn(matchesTable, matchesTable.resultType);
-            await m.addColumn(matchesTable, matchesTable.resultText);
+            await safeAddColumn(matchesTable, matchesTable.endReasonCode);
+            await safeAddColumn(matchesTable, matchesTable.endReasonText);
+            await safeAddColumn(matchesTable, matchesTable.endNote);
+            await safeAddColumn(matchesTable, matchesTable.endedManually);
+            await safeAddColumn(matchesTable, matchesTable.endedAt);
+            await safeAddColumn(matchesTable, matchesTable.endedBy);
+            await safeAddColumn(matchesTable, matchesTable.winnerTeamId);
+            await safeAddColumn(matchesTable, matchesTable.loserTeamId);
+            await safeAddColumn(matchesTable, matchesTable.resultType);
+            await safeAddColumn(matchesTable, matchesTable.resultText);
           }
           if (from < 11) {
-            await m.addColumn(matchesTable, matchesTable.teamAWicketkeeperId);
-            await m.addColumn(matchesTable, matchesTable.teamBWicketkeeperId);
+            await safeAddColumn(matchesTable, matchesTable.teamAWicketkeeperId);
+            await safeAddColumn(matchesTable, matchesTable.teamBWicketkeeperId);
           }
           if (from < 12) {
-            await m.addColumn(matchesTable, matchesTable.totalOvers);
-            await m.addColumn(matchesTable, matchesTable.ballsPerOver);
-            await m.addColumn(matchesTable, matchesTable.maxOversPerBowler);
-            await m.addColumn(matchesTable, matchesTable.allowConsecutiveOvers);
-            await m.addColumn(
+            await safeAddColumn(matchesTable, matchesTable.totalOvers);
+            await safeAddColumn(matchesTable, matchesTable.ballsPerOver);
+            await safeAddColumn(matchesTable, matchesTable.maxOversPerBowler);
+            await safeAddColumn(matchesTable, matchesTable.allowConsecutiveOvers);
+            await safeAddColumn(
                 matchesTable, matchesTable.maxOversWasManuallyEdited);
           }
           if (from < 13) {
-            await m.addColumn(
+            await safeAddColumn(
                 deliveriesTable, deliveriesTable.additionalWideRuns);
             await customStatement('''
               UPDATE deliveries_table
@@ -362,8 +403,8 @@ class AppDatabase extends _$AppDatabase {
             ''');
           }
           if (from < 14) {
-            await m.addColumn(matchesTable, matchesTable.startedAt);
-            await m.addColumn(matchesTable, matchesTable.matchTimeZone);
+            await safeAddColumn(matchesTable, matchesTable.startedAt);
+            await safeAddColumn(matchesTable, matchesTable.matchTimeZone);
           }
           if (from < 15) {
             await customStatement('''
@@ -381,6 +422,16 @@ class AppDatabase extends _$AppDatabase {
             await customStatement(
                 'DROP INDEX IF EXISTS idx_single_active_match');
             await customStatement(_singleActiveMatchIndexSql);
+          }
+          if (from < 17) {
+            await safeAddColumn(matchesTable, matchesTable.tossWinnerTeamId);
+            await safeAddColumn(matchesTable, matchesTable.tossDecision);
+            await safeAddColumn(matchesTable, matchesTable.tossCallingTeamId);
+            await safeAddColumn(matchesTable, matchesTable.tossCall);
+            await safeAddColumn(matchesTable, matchesTable.coinResult);
+          }
+          if (from < 18) {
+            await safeAddColumn(matchesTable, matchesTable.updatedAt);
           }
         },
       );
@@ -617,14 +668,40 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<MatchesTableData>> watchDraftMatches() =>
       (select(matchesTable)..where((m) => m.status.equals('draft'))).watch();
 
+  Future<void> deleteDraftMatch(String matchId) async {
+    await transaction(() async {
+      final match = await (select(matchesTable)..where((m) => m.id.equals(matchId))).getSingleOrNull();
+      if (match == null) return;
+      if (match.status != 'draft' && match.status != 'setupInProgress') {
+        throw StateError('Only draft matches can be deleted.');
+      }
+
+      await (delete(matchSquadMembersTable)..where((s) => s.matchId.equals(matchId))).go();
+      await (delete(deliveriesTable)..where((d) => d.matchId.equals(matchId))).go();
+      await (delete(scoringAuditTable)..where((a) => a.matchId.equals(matchId))).go();
+      await (delete(matchAwardsTable)..where((a) => a.matchId.equals(matchId))).go();
+      await (delete(syncQueueTable)..where((sq) => sq.matchId.equals(matchId))).go();
+
+      await (delete(matchesTable)..where((m) => m.id.equals(matchId))).go();
+    });
+  }
+
   Future<List<MatchesTableData>> getRecentMatches() => (select(matchesTable)
         ..where((m) => m.status
-            .isIn(const ['completed', 'abandoned', 'noResult', 'cancelled'])))
+            .isIn(const ['completed', 'abandoned', 'noResult', 'cancelled']))
+        ..orderBy([
+          (m) => OrderingTerm(expression: m.endedAt, mode: OrderingMode.desc),
+          (m) => OrderingTerm(expression: m.createdAt, mode: OrderingMode.desc),
+        ]))
       .get();
 
   Stream<List<MatchesTableData>> watchRecentMatches() => (select(matchesTable)
         ..where((m) => m.status
-            .isIn(const ['completed', 'abandoned', 'noResult', 'cancelled'])))
+            .isIn(const ['completed', 'abandoned', 'noResult', 'cancelled']))
+        ..orderBy([
+          (m) => OrderingTerm(expression: m.endedAt, mode: OrderingMode.desc),
+          (m) => OrderingTerm(expression: m.createdAt, mode: OrderingMode.desc),
+        ]))
       .watch();
 
   Future<void> endMatchTransaction({

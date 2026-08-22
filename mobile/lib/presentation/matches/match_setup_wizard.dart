@@ -13,6 +13,8 @@ import '../../core/rules/bowling_rule_config.dart';
 import '../../core/validation/match_setup_validation.dart';
 import '../../core/navigation/match_destination.dart';
 import '../../core/utils/player_sorting.dart';
+import '../common/widgets/draft_delete_dialog.dart';
+import 'widgets/digital_coin_toss_widget.dart';
 
 class MatchSetupWizard extends ConsumerStatefulWidget {
   final String? preselectTeamId;
@@ -41,6 +43,8 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
   final int _ballsPerOver = 6;
   final String _format = 'custom';
   DateTime _matchDate = DateTime.now();
+  bool _isScheduledDateCustom = false;
+  int? _draftCreatedAt;
 
   // Step 3: Squads
   List<PlayersTableData> _teamAPlayers = [];
@@ -71,6 +75,9 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
   // Step 4: Toss
   String? _tossWinnerId;
   String _tossDecision = 'BAT'; // BAT or BOWL
+  String? _tossCallingTeamId;
+  String? _tossCall; // HEADS or TAILS
+  String? _coinResult; // HEADS or TAILS
 
   // Step 5: Openers
   String? _strikerId;
@@ -147,9 +154,14 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
         _teamA = matchingA.isEmpty ? null : matchingA.first;
         _teamB = matchingB.isEmpty ? null : matchingB.first;
         _venueController.text = data['venue'] as String? ?? '';
+        _isScheduledDateCustom =
+            data['isScheduledDateCustom'] as bool? ?? false;
+        _draftCreatedAt = data['draftCreatedAt'] as int? ?? draft?.createdAt;
         final scheduledAt = data['scheduledAt'] as int?;
-        if (scheduledAt != null) {
+        if (_isScheduledDateCustom && scheduledAt != null) {
           _matchDate = DateTime.fromMillisecondsSinceEpoch(scheduledAt);
+        } else {
+          _matchDate = DateTime.now();
         }
         _totalOvers = data['overs'] as int? ?? 20;
         _oversController.text = '$_totalOvers';
@@ -166,6 +178,11 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
         _selectedBSquad.addAll(
           (data['teamBSquad'] as List<dynamic>? ?? const []).cast<String>(),
         );
+        _tossCallingTeamId = data['tossCallingTeamId'] as String? ?? draft?.tossCallingTeamId;
+        _tossCall = data['tossCall'] as String? ?? draft?.tossCall;
+        _coinResult = data['coinResult'] as String? ?? draft?.coinResult;
+        _tossWinnerId = data['tossWinnerTeamId'] as String? ?? draft?.tossWinnerTeamId;
+        _tossDecision = data['tossDecision'] as String? ?? draft?.tossDecision ?? 'BAT';
         _eligibleABowlers.addAll(
           (data['eligibleABowlers'] as List<dynamic>? ?? const [])
               .cast<String>(),
@@ -339,6 +356,9 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
           scheduledAt: _matchDate.millisecondsSinceEpoch,
           tossWinnerTeamId: _tossWinnerId,
           tossDecision: _tossDecision,
+          tossCallingTeamId: _tossCallingTeamId,
+          tossCall: _tossCall,
+          coinResult: _coinResult,
           teamASquadJson: jsonEncode(_selectedASquad.toList()),
           teamBSquadJson: jsonEncode(_selectedBSquad.toList()),
           teamACaptainId: _teamACaptainId,
@@ -352,6 +372,10 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
             'overs': _totalOvers,
             'format': _format,
             'scheduledAt': _matchDate.millisecondsSinceEpoch,
+            'isScheduledDateCustom': _isScheduledDateCustom,
+            'draftCreatedAt':
+                _draftCreatedAt ?? DateTime.now().millisecondsSinceEpoch,
+            'draftUpdatedAt': DateTime.now().millisecondsSinceEpoch,
             'currentStep': _currentStep,
             'teamACaptainId': _teamACaptainId,
             'teamBCaptainId': _teamBCaptainId,
@@ -359,6 +383,11 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
             'teamBWicketkeeperId': _teamBWicketkeeperId,
             'teamASquad': _selectedASquad.toList(),
             'teamBSquad': _selectedBSquad.toList(),
+            'tossCallingTeamId': _tossCallingTeamId,
+            'tossCall': _tossCall,
+            'coinResult': _coinResult,
+            'tossWinnerTeamId': _tossWinnerId,
+            'tossDecision': _tossDecision,
             'eligibleABowlers': _eligibleABowlers.toList(),
             'eligibleBBowlers': _eligibleBBowlers.toList(),
             'bowlerLimitMode': _bowlerLimitMode.name,
@@ -542,8 +571,7 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
       return;
     }
 
-    final matchId =
-        widget.draftId ?? 'match_${DateTime.now().millisecondsSinceEpoch}';
+    final matchId = _draftMatchId;
     final matchName = '${_teamA!.name} vs ${_teamB!.name}';
 
     final aEligible = _eligibleABowlers.intersection(_selectedASquad).length;
@@ -630,6 +658,9 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
       ),
       tossWinnerTeamId: _tossWinnerId!,
       tossDecision: _tossDecision,
+      tossCallingTeamId: _tossCallingTeamId,
+      tossCall: _tossCall,
+      coinResult: _coinResult,
       openingStrikerId: _strikerId!,
       openingNonStrikerId: _nonStrikerId!,
       openingBowlerId: _bowlerId!,
@@ -645,9 +676,11 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
           wicketkeeperPlayerId: _teamBWicketkeeperId,
         ),
       ],
-      scheduledAt: _matchDate.millisecondsSinceEpoch,
+      scheduledAt: _isScheduledDateCustom
+          ? _matchDate.millisecondsSinceEpoch
+          : DateTime.now().millisecondsSinceEpoch,
       startedAt: DateTime.now().millisecondsSinceEpoch,
-      createdAt: DateTime.now().millisecondsSinceEpoch,
+      createdAt: _draftCreatedAt ?? DateTime.now().millisecondsSinceEpoch,
       venueName: _venueController.text.trim(),
       matchTimeZone: DateTime.now().timeZoneName,
     );
@@ -666,11 +699,14 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
         allowConsecutiveOvers: _allowConsecutiveOvers,
         maxOversWasManuallyEdited: _maxOversWasManuallyEdited,
         venueName: _venueController.text.trim(),
-        scheduledAt: _matchDate.millisecondsSinceEpoch,
+        scheduledAt: engine.state.scheduledAt ?? DateTime.now().millisecondsSinceEpoch,
         startedAt: engine.state.startedAt,
         matchTimeZone: engine.state.matchTimeZone,
         tossWinnerTeamId: _tossWinnerId,
         tossDecision: _tossDecision,
+        tossCallingTeamId: _tossCallingTeamId,
+        tossCall: _tossCall,
+        coinResult: _coinResult,
         teamASquadJson: jsonEncode(_selectedASquad.toList()),
         teamBSquadJson: jsonEncode(_selectedBSquad.toList()),
         teamACaptainId: _teamACaptainId,
@@ -697,6 +733,30 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
     }
   }
 
+  Future<void> _confirmAndDeleteDraft() async {
+    final name = (_teamA != null && _teamB != null)
+        ? '${_teamA!.name} vs ${_teamB!.name}'
+        : 'Draft Match';
+    final confirmed = await showDeleteDraftConfirmationDialog(
+      context,
+      matchName: name,
+    );
+    if (!confirmed || !mounted) return;
+    try {
+      await ref.read(matchRepositoryProvider).deleteDraftMatch(_draftMatchId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Draft match deleted.')),
+      );
+      context.go('/');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete draft match: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_checkingActiveMatch || _blockedByActiveMatch) {
@@ -711,6 +771,12 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
             child:
                 const Text('Save Draft', style: TextStyle(color: Colors.white)),
           ),
+          if (widget.draftId != null)
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.white),
+              tooltip: 'Delete Draft',
+              onPressed: _confirmAndDeleteDraft,
+            ),
         ],
       ),
       body: SafeArea(
@@ -771,12 +837,19 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
         ]),
       );
 
+  bool get _tossIsReady =>
+      _tossCallingTeamId != null &&
+      _tossCall != null &&
+      _coinResult != null &&
+      _tossWinnerId != null;
+
   Widget _buildStickySetupActions() {
-    final blocked = _currentStep == 0 &&
+    final blocked = (_currentStep == 0 &&
             (_loadingTeamAPlayers ||
                 _loadingTeamBPlayers ||
-                !_teamValidation.isValid) ||
-        _currentStep == 5 && !_reviewIsReady;
+                !_teamValidation.isValid)) ||
+        (_currentStep == 3 && !_tossIsReady) ||
+        (_currentStep == 5 && !_reviewIsReady);
     return Container(
       key: const ValueKey('match-setup-sticky-actions'),
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
@@ -845,7 +918,19 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
         _showSetupIssue(firstIssue);
         return;
       }
-      _tossWinnerId ??= _teamA!.id;
+    } else if (_currentStep == 3) {
+      if (!_tossIsReady) {
+        if (_tossCallingTeamId == null) {
+          _showSetupIssue('Please select which team calls the toss.');
+        } else if (_tossCall == null) {
+          _showSetupIssue('Please choose your call (HEADS or TAILS).');
+        } else if (_coinResult == null || _tossWinnerId == null) {
+          _showSetupIssue('Please flip the coin to determine the toss winner.');
+        } else {
+          _showSetupIssue('Please complete the toss decision.');
+        }
+        return;
+      }
     } else if (_currentStep == 4) {
       if (_strikerId == null || _nonStrikerId == null || _bowlerId == null) {
         _showSetupIssue('Select striker, non-striker, and opening bowler.');
@@ -1192,8 +1277,12 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
                 initialTime: TimeOfDay.fromDateTime(_matchDate),
               );
               if (time != null) {
-                setState(() => _matchDate = DateTime(selected.year,
-                    selected.month, selected.day, time.hour, time.minute));
+                setState(() {
+                  _matchDate = DateTime(selected.year, selected.month,
+                      selected.day, time.hour, time.minute);
+                  _isScheduledDateCustom = true;
+                });
+                _persistDraft();
               }
             },
           ),
@@ -1645,58 +1734,52 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
       );
 
   Step _buildTossStep() {
+    final teamAId = _teamA?.id ?? 'team_a';
     final teamAName = _teamA?.name ?? 'Team A';
+    final teamBId = _teamB?.id ?? 'team_b';
     final teamBName = _teamB?.name ?? 'Team B';
 
     return Step(
       title: const Text('Toss'),
       isActive: _currentStep >= 3,
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Who won the toss?',
-              style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          RadioListTile<String>(
-            title: Text(teamAName),
-            value: _teamA?.id ?? '',
-            groupValue: _tossWinnerId,
-            onChanged: (val) => setState(() => _tossWinnerId = val),
-          ),
-          RadioListTile<String>(
-            title: Text(teamBName),
-            value: _teamB?.id ?? '',
-            groupValue: _tossWinnerId,
-            onChanged: (val) => setState(() => _tossWinnerId = val),
-          ),
-          const SizedBox(height: 16),
-          const Text('Toss Winner elected to:',
-              style: TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: ChoiceChip(
-                  label: const Text('BAT FIRST'),
-                  selected: _tossDecision == 'BAT',
-                  onSelected: (val) {
-                    if (val) setState(() => _tossDecision = 'BAT');
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ChoiceChip(
-                  label: const Text('BOWL FIRST'),
-                  selected: _tossDecision == 'BOWL',
-                  onSelected: (val) {
-                    if (val) setState(() => _tossDecision = 'BOWL');
-                  },
-                ),
-              ),
-            ],
-          ),
-        ],
+      content: DigitalCoinTossWidget(
+        teamAId: teamAId,
+        teamAName: teamAName,
+        teamBId: teamBId,
+        teamBName: teamBName,
+        initialCallingTeamId: _tossCallingTeamId,
+        initialTossCall: _tossCall,
+        initialCoinResult: _coinResult,
+        initialTossWinnerId: _tossWinnerId,
+        initialTossDecision: _tossDecision,
+        onTossCompleted: (result) {
+          setState(() {
+            _tossCallingTeamId = result.tossCallingTeamId;
+            _tossCall = result.tossCall;
+            _coinResult = result.coinResult;
+            _tossWinnerId = result.tossWinnerTeamId;
+            _tossDecision = result.tossDecision;
+            _sanitizeOpenerSelections();
+          });
+          _persistDraft();
+        },
+        onTossReset: () {
+          setState(() {
+            _tossCallingTeamId = null;
+            _tossCall = null;
+            _coinResult = null;
+            _tossWinnerId = null;
+          });
+          _persistDraft();
+        },
+        onConfirmToss: () {
+          if (_currentStep == 3 && _tossIsReady) {
+            setState(() {
+              _currentStep = 4;
+            });
+            _persistDraft();
+          }
+        },
       ),
     );
   }
@@ -1729,6 +1812,22 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
       jerseyNumberOf: (player) => player.jerseyNumber,
     );
 
+    final validBattingIds = battingSquad.map((p) => p.id).toSet();
+    final validBowlingIds = bowlingSquad.map((p) => p.id).toSet();
+
+    final effectiveStrikerId =
+        (_strikerId != null && validBattingIds.contains(_strikerId))
+            ? _strikerId
+            : null;
+    final effectiveNonStrikerId =
+        (_nonStrikerId != null && validBattingIds.contains(_nonStrikerId))
+            ? _nonStrikerId
+            : null;
+    final effectiveBowlerId =
+        (_bowlerId != null && validBowlingIds.contains(_bowlerId))
+            ? _bowlerId
+            : null;
+
     return Step(
       title: const Text('Openers'),
       isActive: _currentStep >= 4,
@@ -1739,11 +1838,11 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
               style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
-            value: _strikerId,
+            value: effectiveStrikerId,
             hint: const Text('Select Striker'),
             decoration: const InputDecoration(border: OutlineInputBorder()),
             items: battingSquad
-                .where((p) => p.id != _nonStrikerId)
+                .where((p) => p.id != effectiveNonStrikerId)
                 .map((p) => DropdownMenuItem(value: p.id, child: Text(p.name)))
                 .toList(),
             onChanged: (val) => setState(() => _strikerId = val),
@@ -1753,11 +1852,11 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
               style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
-            value: _nonStrikerId,
+            value: effectiveNonStrikerId,
             hint: const Text('Select Non-Striker'),
             decoration: const InputDecoration(border: OutlineInputBorder()),
             items: battingSquad
-                .where((p) => p.id != _strikerId)
+                .where((p) => p.id != effectiveStrikerId)
                 .map((p) => DropdownMenuItem(value: p.id, child: Text(p.name)))
                 .toList(),
             onChanged: (val) => setState(() => _nonStrikerId = val),
@@ -1767,7 +1866,7 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
               style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
-            value: _bowlerId,
+            value: effectiveBowlerId,
             hint: const Text('Select Opening Bowler'),
             decoration: const InputDecoration(border: OutlineInputBorder()),
             items: bowlingSquad
@@ -1778,6 +1877,38 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
         ],
       ),
     );
+  }
+
+  void _sanitizeOpenerSelections() {
+    final battingTeamId = _tossDecision == 'BAT'
+        ? _tossWinnerId
+        : (_tossWinnerId == _teamA?.id ? _teamB?.id : _teamA?.id);
+
+    final isTeamABatting = battingTeamId == _teamA?.id;
+    final battingSquad = isTeamABatting
+        ? _teamAPlayers.where((p) => _selectedASquad.contains(p.id))
+        : _teamBPlayers.where((p) => _selectedBSquad.contains(p.id));
+
+    final bowlingSquad = isTeamABatting
+        ? _teamBPlayers.where((p) =>
+            _selectedBSquad.contains(p.id) &&
+            _eligibleBBowlers.contains(p.id))
+        : _teamAPlayers.where((p) =>
+            _selectedASquad.contains(p.id) &&
+            _eligibleABowlers.contains(p.id));
+
+    final battingIds = battingSquad.map((p) => p.id).toSet();
+    final bowlingIds = bowlingSquad.map((p) => p.id).toSet();
+
+    if (_strikerId != null && !battingIds.contains(_strikerId)) {
+      _strikerId = null;
+    }
+    if (_nonStrikerId != null && !battingIds.contains(_nonStrikerId)) {
+      _nonStrikerId = null;
+    }
+    if (_bowlerId != null && !bowlingIds.contains(_bowlerId)) {
+      _bowlerId = null;
+    }
   }
 
   Step _buildConfirmationStep() {

@@ -394,5 +394,4 @@ class PremiumBottomNavigation extends StatelessWidget {
 }
 
 typedef MatchCard = AppCard;
-typedef TeamCard = AppCard;
 typedef PlayerCard = AppCard;

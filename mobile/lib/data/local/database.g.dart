@@ -1474,6 +1474,24 @@ class $MatchesTableTable extends MatchesTable
   late final GeneratedColumn<String> tossDecision = GeneratedColumn<String>(
       'toss_decision', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _tossCallingTeamIdMeta =
+      const VerificationMeta('tossCallingTeamId');
+  @override
+  late final GeneratedColumn<String> tossCallingTeamId =
+      GeneratedColumn<String>('toss_calling_team_id', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _tossCallMeta =
+      const VerificationMeta('tossCall');
+  @override
+  late final GeneratedColumn<String> tossCall = GeneratedColumn<String>(
+      'toss_call', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _coinResultMeta =
+      const VerificationMeta('coinResult');
+  @override
+  late final GeneratedColumn<String> coinResult = GeneratedColumn<String>(
+      'coin_result', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _teamASquadJsonMeta =
       const VerificationMeta('teamASquadJson');
   @override
@@ -1557,6 +1575,12 @@ class $MatchesTableTable extends MatchesTable
   late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
       'created_at', aliasedName, false,
       type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<int> updatedAt = GeneratedColumn<int>(
+      'updated_at', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _endReasonCodeMeta =
       const VerificationMeta('endReasonCode');
   @override
@@ -1640,6 +1664,9 @@ class $MatchesTableTable extends MatchesTable
         matchTimeZone,
         tossWinnerTeamId,
         tossDecision,
+        tossCallingTeamId,
+        tossCall,
+        coinResult,
         teamASquadJson,
         teamBSquadJson,
         teamACaptainId,
@@ -1653,6 +1680,7 @@ class $MatchesTableTable extends MatchesTable
         stateJson,
         setupDraftJson,
         createdAt,
+        updatedAt,
         endReasonCode,
         endReasonText,
         endNote,
@@ -1770,6 +1798,22 @@ class $MatchesTableTable extends MatchesTable
           tossDecision.isAcceptableOrUnknown(
               data['toss_decision']!, _tossDecisionMeta));
     }
+    if (data.containsKey('toss_calling_team_id')) {
+      context.handle(
+          _tossCallingTeamIdMeta,
+          tossCallingTeamId.isAcceptableOrUnknown(
+              data['toss_calling_team_id']!, _tossCallingTeamIdMeta));
+    }
+    if (data.containsKey('toss_call')) {
+      context.handle(_tossCallMeta,
+          tossCall.isAcceptableOrUnknown(data['toss_call']!, _tossCallMeta));
+    }
+    if (data.containsKey('coin_result')) {
+      context.handle(
+          _coinResultMeta,
+          coinResult.isAcceptableOrUnknown(
+              data['coin_result']!, _coinResultMeta));
+    }
     if (data.containsKey('team_a_squad_json')) {
       context.handle(
           _teamASquadJsonMeta,
@@ -1843,6 +1887,10 @@ class $MatchesTableTable extends MatchesTable
           createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
     } else if (isInserting) {
       context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
     }
     if (data.containsKey('end_reason_code')) {
       context.handle(
@@ -1942,6 +1990,12 @@ class $MatchesTableTable extends MatchesTable
           DriftSqlType.string, data['${effectivePrefix}toss_winner_team_id']),
       tossDecision: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}toss_decision']),
+      tossCallingTeamId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}toss_calling_team_id']),
+      tossCall: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}toss_call']),
+      coinResult: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}coin_result']),
       teamASquadJson: attachedDatabase.typeMapping.read(
           DriftSqlType.string, data['${effectivePrefix}team_a_squad_json']),
       teamBSquadJson: attachedDatabase.typeMapping.read(
@@ -1971,6 +2025,8 @@ class $MatchesTableTable extends MatchesTable
           DriftSqlType.string, data['${effectivePrefix}setup_draft_json']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}updated_at']),
       endReasonCode: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}end_reason_code']),
       endReasonText: attachedDatabase.typeMapping
@@ -2019,6 +2075,9 @@ class MatchesTableData extends DataClass
   final String? matchTimeZone;
   final String? tossWinnerTeamId;
   final String? tossDecision;
+  final String? tossCallingTeamId;
+  final String? tossCall;
+  final String? coinResult;
   final String? teamASquadJson;
   final String? teamBSquadJson;
   final String? teamACaptainId;
@@ -2032,6 +2091,7 @@ class MatchesTableData extends DataClass
   final String? stateJson;
   final String? setupDraftJson;
   final int createdAt;
+  final int? updatedAt;
   final String? endReasonCode;
   final String? endReasonText;
   final String? endNote;
@@ -2060,6 +2120,9 @@ class MatchesTableData extends DataClass
       this.matchTimeZone,
       this.tossWinnerTeamId,
       this.tossDecision,
+      this.tossCallingTeamId,
+      this.tossCall,
+      this.coinResult,
       this.teamASquadJson,
       this.teamBSquadJson,
       this.teamACaptainId,
@@ -2073,6 +2136,7 @@ class MatchesTableData extends DataClass
       this.stateJson,
       this.setupDraftJson,
       required this.createdAt,
+      this.updatedAt,
       this.endReasonCode,
       this.endReasonText,
       this.endNote,
@@ -2128,6 +2192,15 @@ class MatchesTableData extends DataClass
     if (!nullToAbsent || tossDecision != null) {
       map['toss_decision'] = Variable<String>(tossDecision);
     }
+    if (!nullToAbsent || tossCallingTeamId != null) {
+      map['toss_calling_team_id'] = Variable<String>(tossCallingTeamId);
+    }
+    if (!nullToAbsent || tossCall != null) {
+      map['toss_call'] = Variable<String>(tossCall);
+    }
+    if (!nullToAbsent || coinResult != null) {
+      map['coin_result'] = Variable<String>(coinResult);
+    }
     if (!nullToAbsent || teamASquadJson != null) {
       map['team_a_squad_json'] = Variable<String>(teamASquadJson);
     }
@@ -2157,6 +2230,9 @@ class MatchesTableData extends DataClass
       map['setup_draft_json'] = Variable<String>(setupDraftJson);
     }
     map['created_at'] = Variable<int>(createdAt);
+    if (!nullToAbsent || updatedAt != null) {
+      map['updated_at'] = Variable<int>(updatedAt);
+    }
     if (!nullToAbsent || endReasonCode != null) {
       map['end_reason_code'] = Variable<String>(endReasonCode);
     }
@@ -2232,6 +2308,15 @@ class MatchesTableData extends DataClass
       tossDecision: tossDecision == null && nullToAbsent
           ? const Value.absent()
           : Value(tossDecision),
+      tossCallingTeamId: tossCallingTeamId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tossCallingTeamId),
+      tossCall: tossCall == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tossCall),
+      coinResult: coinResult == null && nullToAbsent
+          ? const Value.absent()
+          : Value(coinResult),
       teamASquadJson: teamASquadJson == null && nullToAbsent
           ? const Value.absent()
           : Value(teamASquadJson),
@@ -2261,6 +2346,9 @@ class MatchesTableData extends DataClass
           ? const Value.absent()
           : Value(setupDraftJson),
       createdAt: Value(createdAt),
+      updatedAt: updatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(updatedAt),
       endReasonCode: endReasonCode == null && nullToAbsent
           ? const Value.absent()
           : Value(endReasonCode),
@@ -2315,6 +2403,10 @@ class MatchesTableData extends DataClass
       matchTimeZone: serializer.fromJson<String?>(json['matchTimeZone']),
       tossWinnerTeamId: serializer.fromJson<String?>(json['tossWinnerTeamId']),
       tossDecision: serializer.fromJson<String?>(json['tossDecision']),
+      tossCallingTeamId:
+          serializer.fromJson<String?>(json['tossCallingTeamId']),
+      tossCall: serializer.fromJson<String?>(json['tossCall']),
+      coinResult: serializer.fromJson<String?>(json['coinResult']),
       teamASquadJson: serializer.fromJson<String?>(json['teamASquadJson']),
       teamBSquadJson: serializer.fromJson<String?>(json['teamBSquadJson']),
       teamACaptainId: serializer.fromJson<String?>(json['teamACaptainId']),
@@ -2331,6 +2423,7 @@ class MatchesTableData extends DataClass
       stateJson: serializer.fromJson<String?>(json['stateJson']),
       setupDraftJson: serializer.fromJson<String?>(json['setupDraftJson']),
       createdAt: serializer.fromJson<int>(json['createdAt']),
+      updatedAt: serializer.fromJson<int?>(json['updatedAt']),
       endReasonCode: serializer.fromJson<String?>(json['endReasonCode']),
       endReasonText: serializer.fromJson<String?>(json['endReasonText']),
       endNote: serializer.fromJson<String?>(json['endNote']),
@@ -2365,6 +2458,9 @@ class MatchesTableData extends DataClass
       'matchTimeZone': serializer.toJson<String?>(matchTimeZone),
       'tossWinnerTeamId': serializer.toJson<String?>(tossWinnerTeamId),
       'tossDecision': serializer.toJson<String?>(tossDecision),
+      'tossCallingTeamId': serializer.toJson<String?>(tossCallingTeamId),
+      'tossCall': serializer.toJson<String?>(tossCall),
+      'coinResult': serializer.toJson<String?>(coinResult),
       'teamASquadJson': serializer.toJson<String?>(teamASquadJson),
       'teamBSquadJson': serializer.toJson<String?>(teamBSquadJson),
       'teamACaptainId': serializer.toJson<String?>(teamACaptainId),
@@ -2378,6 +2474,7 @@ class MatchesTableData extends DataClass
       'stateJson': serializer.toJson<String?>(stateJson),
       'setupDraftJson': serializer.toJson<String?>(setupDraftJson),
       'createdAt': serializer.toJson<int>(createdAt),
+      'updatedAt': serializer.toJson<int?>(updatedAt),
       'endReasonCode': serializer.toJson<String?>(endReasonCode),
       'endReasonText': serializer.toJson<String?>(endReasonText),
       'endNote': serializer.toJson<String?>(endNote),
@@ -2409,6 +2506,9 @@ class MatchesTableData extends DataClass
           Value<String?> matchTimeZone = const Value.absent(),
           Value<String?> tossWinnerTeamId = const Value.absent(),
           Value<String?> tossDecision = const Value.absent(),
+          Value<String?> tossCallingTeamId = const Value.absent(),
+          Value<String?> tossCall = const Value.absent(),
+          Value<String?> coinResult = const Value.absent(),
           Value<String?> teamASquadJson = const Value.absent(),
           Value<String?> teamBSquadJson = const Value.absent(),
           Value<String?> teamACaptainId = const Value.absent(),
@@ -2422,6 +2522,7 @@ class MatchesTableData extends DataClass
           Value<String?> stateJson = const Value.absent(),
           Value<String?> setupDraftJson = const Value.absent(),
           int? createdAt,
+          Value<int?> updatedAt = const Value.absent(),
           Value<String?> endReasonCode = const Value.absent(),
           Value<String?> endReasonText = const Value.absent(),
           Value<String?> endNote = const Value.absent(),
@@ -2462,6 +2563,11 @@ class MatchesTableData extends DataClass
             : this.tossWinnerTeamId,
         tossDecision:
             tossDecision.present ? tossDecision.value : this.tossDecision,
+        tossCallingTeamId: tossCallingTeamId.present
+            ? tossCallingTeamId.value
+            : this.tossCallingTeamId,
+        tossCall: tossCall.present ? tossCall.value : this.tossCall,
+        coinResult: coinResult.present ? coinResult.value : this.coinResult,
         teamASquadJson:
             teamASquadJson.present ? teamASquadJson.value : this.teamASquadJson,
         teamBSquadJson:
@@ -2485,6 +2591,7 @@ class MatchesTableData extends DataClass
         setupDraftJson:
             setupDraftJson.present ? setupDraftJson.value : this.setupDraftJson,
         createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
         endReasonCode:
             endReasonCode.present ? endReasonCode.value : this.endReasonCode,
         endReasonText:
@@ -2536,6 +2643,12 @@ class MatchesTableData extends DataClass
       tossDecision: data.tossDecision.present
           ? data.tossDecision.value
           : this.tossDecision,
+      tossCallingTeamId: data.tossCallingTeamId.present
+          ? data.tossCallingTeamId.value
+          : this.tossCallingTeamId,
+      tossCall: data.tossCall.present ? data.tossCall.value : this.tossCall,
+      coinResult:
+          data.coinResult.present ? data.coinResult.value : this.coinResult,
       teamASquadJson: data.teamASquadJson.present
           ? data.teamASquadJson.value
           : this.teamASquadJson,
@@ -2566,6 +2679,7 @@ class MatchesTableData extends DataClass
           ? data.setupDraftJson.value
           : this.setupDraftJson,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       endReasonCode: data.endReasonCode.present
           ? data.endReasonCode.value
           : this.endReasonCode,
@@ -2610,6 +2724,9 @@ class MatchesTableData extends DataClass
           ..write('matchTimeZone: $matchTimeZone, ')
           ..write('tossWinnerTeamId: $tossWinnerTeamId, ')
           ..write('tossDecision: $tossDecision, ')
+          ..write('tossCallingTeamId: $tossCallingTeamId, ')
+          ..write('tossCall: $tossCall, ')
+          ..write('coinResult: $coinResult, ')
           ..write('teamASquadJson: $teamASquadJson, ')
           ..write('teamBSquadJson: $teamBSquadJson, ')
           ..write('teamACaptainId: $teamACaptainId, ')
@@ -2623,6 +2740,7 @@ class MatchesTableData extends DataClass
           ..write('stateJson: $stateJson, ')
           ..write('setupDraftJson: $setupDraftJson, ')
           ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('endReasonCode: $endReasonCode, ')
           ..write('endReasonText: $endReasonText, ')
           ..write('endNote: $endNote, ')
@@ -2656,6 +2774,9 @@ class MatchesTableData extends DataClass
         matchTimeZone,
         tossWinnerTeamId,
         tossDecision,
+        tossCallingTeamId,
+        tossCall,
+        coinResult,
         teamASquadJson,
         teamBSquadJson,
         teamACaptainId,
@@ -2669,6 +2790,7 @@ class MatchesTableData extends DataClass
         stateJson,
         setupDraftJson,
         createdAt,
+        updatedAt,
         endReasonCode,
         endReasonText,
         endNote,
@@ -2701,6 +2823,9 @@ class MatchesTableData extends DataClass
           other.matchTimeZone == this.matchTimeZone &&
           other.tossWinnerTeamId == this.tossWinnerTeamId &&
           other.tossDecision == this.tossDecision &&
+          other.tossCallingTeamId == this.tossCallingTeamId &&
+          other.tossCall == this.tossCall &&
+          other.coinResult == this.coinResult &&
           other.teamASquadJson == this.teamASquadJson &&
           other.teamBSquadJson == this.teamBSquadJson &&
           other.teamACaptainId == this.teamACaptainId &&
@@ -2714,6 +2839,7 @@ class MatchesTableData extends DataClass
           other.stateJson == this.stateJson &&
           other.setupDraftJson == this.setupDraftJson &&
           other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
           other.endReasonCode == this.endReasonCode &&
           other.endReasonText == this.endReasonText &&
           other.endNote == this.endNote &&
@@ -2744,6 +2870,9 @@ class MatchesTableCompanion extends UpdateCompanion<MatchesTableData> {
   final Value<String?> matchTimeZone;
   final Value<String?> tossWinnerTeamId;
   final Value<String?> tossDecision;
+  final Value<String?> tossCallingTeamId;
+  final Value<String?> tossCall;
+  final Value<String?> coinResult;
   final Value<String?> teamASquadJson;
   final Value<String?> teamBSquadJson;
   final Value<String?> teamACaptainId;
@@ -2757,6 +2886,7 @@ class MatchesTableCompanion extends UpdateCompanion<MatchesTableData> {
   final Value<String?> stateJson;
   final Value<String?> setupDraftJson;
   final Value<int> createdAt;
+  final Value<int?> updatedAt;
   final Value<String?> endReasonCode;
   final Value<String?> endReasonText;
   final Value<String?> endNote;
@@ -2786,6 +2916,9 @@ class MatchesTableCompanion extends UpdateCompanion<MatchesTableData> {
     this.matchTimeZone = const Value.absent(),
     this.tossWinnerTeamId = const Value.absent(),
     this.tossDecision = const Value.absent(),
+    this.tossCallingTeamId = const Value.absent(),
+    this.tossCall = const Value.absent(),
+    this.coinResult = const Value.absent(),
     this.teamASquadJson = const Value.absent(),
     this.teamBSquadJson = const Value.absent(),
     this.teamACaptainId = const Value.absent(),
@@ -2799,6 +2932,7 @@ class MatchesTableCompanion extends UpdateCompanion<MatchesTableData> {
     this.stateJson = const Value.absent(),
     this.setupDraftJson = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
     this.endReasonCode = const Value.absent(),
     this.endReasonText = const Value.absent(),
     this.endNote = const Value.absent(),
@@ -2829,6 +2963,9 @@ class MatchesTableCompanion extends UpdateCompanion<MatchesTableData> {
     this.matchTimeZone = const Value.absent(),
     this.tossWinnerTeamId = const Value.absent(),
     this.tossDecision = const Value.absent(),
+    this.tossCallingTeamId = const Value.absent(),
+    this.tossCall = const Value.absent(),
+    this.coinResult = const Value.absent(),
     this.teamASquadJson = const Value.absent(),
     this.teamBSquadJson = const Value.absent(),
     this.teamACaptainId = const Value.absent(),
@@ -2842,6 +2979,7 @@ class MatchesTableCompanion extends UpdateCompanion<MatchesTableData> {
     this.stateJson = const Value.absent(),
     this.setupDraftJson = const Value.absent(),
     required int createdAt,
+    this.updatedAt = const Value.absent(),
     this.endReasonCode = const Value.absent(),
     this.endReasonText = const Value.absent(),
     this.endNote = const Value.absent(),
@@ -2877,6 +3015,9 @@ class MatchesTableCompanion extends UpdateCompanion<MatchesTableData> {
     Expression<String>? matchTimeZone,
     Expression<String>? tossWinnerTeamId,
     Expression<String>? tossDecision,
+    Expression<String>? tossCallingTeamId,
+    Expression<String>? tossCall,
+    Expression<String>? coinResult,
     Expression<String>? teamASquadJson,
     Expression<String>? teamBSquadJson,
     Expression<String>? teamACaptainId,
@@ -2890,6 +3031,7 @@ class MatchesTableCompanion extends UpdateCompanion<MatchesTableData> {
     Expression<String>? stateJson,
     Expression<String>? setupDraftJson,
     Expression<int>? createdAt,
+    Expression<int>? updatedAt,
     Expression<String>? endReasonCode,
     Expression<String>? endReasonText,
     Expression<String>? endNote,
@@ -2922,6 +3064,9 @@ class MatchesTableCompanion extends UpdateCompanion<MatchesTableData> {
       if (matchTimeZone != null) 'match_time_zone': matchTimeZone,
       if (tossWinnerTeamId != null) 'toss_winner_team_id': tossWinnerTeamId,
       if (tossDecision != null) 'toss_decision': tossDecision,
+      if (tossCallingTeamId != null) 'toss_calling_team_id': tossCallingTeamId,
+      if (tossCall != null) 'toss_call': tossCall,
+      if (coinResult != null) 'coin_result': coinResult,
       if (teamASquadJson != null) 'team_a_squad_json': teamASquadJson,
       if (teamBSquadJson != null) 'team_b_squad_json': teamBSquadJson,
       if (teamACaptainId != null) 'team_a_captain_id': teamACaptainId,
@@ -2938,6 +3083,7 @@ class MatchesTableCompanion extends UpdateCompanion<MatchesTableData> {
       if (stateJson != null) 'state_json': stateJson,
       if (setupDraftJson != null) 'setup_draft_json': setupDraftJson,
       if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
       if (endReasonCode != null) 'end_reason_code': endReasonCode,
       if (endReasonText != null) 'end_reason_text': endReasonText,
       if (endNote != null) 'end_note': endNote,
@@ -2970,6 +3116,9 @@ class MatchesTableCompanion extends UpdateCompanion<MatchesTableData> {
       Value<String?>? matchTimeZone,
       Value<String?>? tossWinnerTeamId,
       Value<String?>? tossDecision,
+      Value<String?>? tossCallingTeamId,
+      Value<String?>? tossCall,
+      Value<String?>? coinResult,
       Value<String?>? teamASquadJson,
       Value<String?>? teamBSquadJson,
       Value<String?>? teamACaptainId,
@@ -2983,6 +3132,7 @@ class MatchesTableCompanion extends UpdateCompanion<MatchesTableData> {
       Value<String?>? stateJson,
       Value<String?>? setupDraftJson,
       Value<int>? createdAt,
+      Value<int?>? updatedAt,
       Value<String?>? endReasonCode,
       Value<String?>? endReasonText,
       Value<String?>? endNote,
@@ -3014,6 +3164,9 @@ class MatchesTableCompanion extends UpdateCompanion<MatchesTableData> {
       matchTimeZone: matchTimeZone ?? this.matchTimeZone,
       tossWinnerTeamId: tossWinnerTeamId ?? this.tossWinnerTeamId,
       tossDecision: tossDecision ?? this.tossDecision,
+      tossCallingTeamId: tossCallingTeamId ?? this.tossCallingTeamId,
+      tossCall: tossCall ?? this.tossCall,
+      coinResult: coinResult ?? this.coinResult,
       teamASquadJson: teamASquadJson ?? this.teamASquadJson,
       teamBSquadJson: teamBSquadJson ?? this.teamBSquadJson,
       teamACaptainId: teamACaptainId ?? this.teamACaptainId,
@@ -3028,6 +3181,7 @@ class MatchesTableCompanion extends UpdateCompanion<MatchesTableData> {
       stateJson: stateJson ?? this.stateJson,
       setupDraftJson: setupDraftJson ?? this.setupDraftJson,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       endReasonCode: endReasonCode ?? this.endReasonCode,
       endReasonText: endReasonText ?? this.endReasonText,
       endNote: endNote ?? this.endNote,
@@ -3098,6 +3252,15 @@ class MatchesTableCompanion extends UpdateCompanion<MatchesTableData> {
     if (tossDecision.present) {
       map['toss_decision'] = Variable<String>(tossDecision.value);
     }
+    if (tossCallingTeamId.present) {
+      map['toss_calling_team_id'] = Variable<String>(tossCallingTeamId.value);
+    }
+    if (tossCall.present) {
+      map['toss_call'] = Variable<String>(tossCall.value);
+    }
+    if (coinResult.present) {
+      map['coin_result'] = Variable<String>(coinResult.value);
+    }
     if (teamASquadJson.present) {
       map['team_a_squad_json'] = Variable<String>(teamASquadJson.value);
     }
@@ -3139,6 +3302,9 @@ class MatchesTableCompanion extends UpdateCompanion<MatchesTableData> {
     }
     if (createdAt.present) {
       map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<int>(updatedAt.value);
     }
     if (endReasonCode.present) {
       map['end_reason_code'] = Variable<String>(endReasonCode.value);
@@ -3196,6 +3362,9 @@ class MatchesTableCompanion extends UpdateCompanion<MatchesTableData> {
           ..write('matchTimeZone: $matchTimeZone, ')
           ..write('tossWinnerTeamId: $tossWinnerTeamId, ')
           ..write('tossDecision: $tossDecision, ')
+          ..write('tossCallingTeamId: $tossCallingTeamId, ')
+          ..write('tossCall: $tossCall, ')
+          ..write('coinResult: $coinResult, ')
           ..write('teamASquadJson: $teamASquadJson, ')
           ..write('teamBSquadJson: $teamBSquadJson, ')
           ..write('teamACaptainId: $teamACaptainId, ')
@@ -3209,6 +3378,7 @@ class MatchesTableCompanion extends UpdateCompanion<MatchesTableData> {
           ..write('stateJson: $stateJson, ')
           ..write('setupDraftJson: $setupDraftJson, ')
           ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
           ..write('endReasonCode: $endReasonCode, ')
           ..write('endReasonText: $endReasonText, ')
           ..write('endNote: $endNote, ')
@@ -7497,6 +7667,9 @@ typedef $$MatchesTableTableCreateCompanionBuilder = MatchesTableCompanion
   Value<String?> matchTimeZone,
   Value<String?> tossWinnerTeamId,
   Value<String?> tossDecision,
+  Value<String?> tossCallingTeamId,
+  Value<String?> tossCall,
+  Value<String?> coinResult,
   Value<String?> teamASquadJson,
   Value<String?> teamBSquadJson,
   Value<String?> teamACaptainId,
@@ -7510,6 +7683,7 @@ typedef $$MatchesTableTableCreateCompanionBuilder = MatchesTableCompanion
   Value<String?> stateJson,
   Value<String?> setupDraftJson,
   required int createdAt,
+  Value<int?> updatedAt,
   Value<String?> endReasonCode,
   Value<String?> endReasonText,
   Value<String?> endNote,
@@ -7541,6 +7715,9 @@ typedef $$MatchesTableTableUpdateCompanionBuilder = MatchesTableCompanion
   Value<String?> matchTimeZone,
   Value<String?> tossWinnerTeamId,
   Value<String?> tossDecision,
+  Value<String?> tossCallingTeamId,
+  Value<String?> tossCall,
+  Value<String?> coinResult,
   Value<String?> teamASquadJson,
   Value<String?> teamBSquadJson,
   Value<String?> teamACaptainId,
@@ -7554,6 +7731,7 @@ typedef $$MatchesTableTableUpdateCompanionBuilder = MatchesTableCompanion
   Value<String?> stateJson,
   Value<String?> setupDraftJson,
   Value<int> createdAt,
+  Value<int?> updatedAt,
   Value<String?> endReasonCode,
   Value<String?> endReasonText,
   Value<String?> endNote,
@@ -7631,6 +7809,16 @@ class $$MatchesTableTableFilterComposer
   ColumnFilters<String> get tossDecision => $composableBuilder(
       column: $table.tossDecision, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<String> get tossCallingTeamId => $composableBuilder(
+      column: $table.tossCallingTeamId,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get tossCall => $composableBuilder(
+      column: $table.tossCall, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get coinResult => $composableBuilder(
+      column: $table.coinResult, builder: (column) => ColumnFilters(column));
+
   ColumnFilters<String> get teamASquadJson => $composableBuilder(
       column: $table.teamASquadJson,
       builder: (column) => ColumnFilters(column));
@@ -7677,6 +7865,9 @@ class $$MatchesTableTableFilterComposer
 
   ColumnFilters<int> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get endReasonCode => $composableBuilder(
       column: $table.endReasonCode, builder: (column) => ColumnFilters(column));
@@ -7777,6 +7968,16 @@ class $$MatchesTableTableOrderingComposer
       column: $table.tossDecision,
       builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get tossCallingTeamId => $composableBuilder(
+      column: $table.tossCallingTeamId,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get tossCall => $composableBuilder(
+      column: $table.tossCall, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get coinResult => $composableBuilder(
+      column: $table.coinResult, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get teamASquadJson => $composableBuilder(
       column: $table.teamASquadJson,
       builder: (column) => ColumnOrderings(column));
@@ -7823,6 +8024,9 @@ class $$MatchesTableTableOrderingComposer
 
   ColumnOrderings<int> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get endReasonCode => $composableBuilder(
       column: $table.endReasonCode,
@@ -7919,6 +8123,15 @@ class $$MatchesTableTableAnnotationComposer
   GeneratedColumn<String> get tossDecision => $composableBuilder(
       column: $table.tossDecision, builder: (column) => column);
 
+  GeneratedColumn<String> get tossCallingTeamId => $composableBuilder(
+      column: $table.tossCallingTeamId, builder: (column) => column);
+
+  GeneratedColumn<String> get tossCall =>
+      $composableBuilder(column: $table.tossCall, builder: (column) => column);
+
+  GeneratedColumn<String> get coinResult => $composableBuilder(
+      column: $table.coinResult, builder: (column) => column);
+
   GeneratedColumn<String> get teamASquadJson => $composableBuilder(
       column: $table.teamASquadJson, builder: (column) => column);
 
@@ -7957,6 +8170,9 @@ class $$MatchesTableTableAnnotationComposer
 
   GeneratedColumn<int> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   GeneratedColumn<String> get endReasonCode => $composableBuilder(
       column: $table.endReasonCode, builder: (column) => column);
@@ -8032,6 +8248,9 @@ class $$MatchesTableTableTableManager extends RootTableManager<
             Value<String?> matchTimeZone = const Value.absent(),
             Value<String?> tossWinnerTeamId = const Value.absent(),
             Value<String?> tossDecision = const Value.absent(),
+            Value<String?> tossCallingTeamId = const Value.absent(),
+            Value<String?> tossCall = const Value.absent(),
+            Value<String?> coinResult = const Value.absent(),
             Value<String?> teamASquadJson = const Value.absent(),
             Value<String?> teamBSquadJson = const Value.absent(),
             Value<String?> teamACaptainId = const Value.absent(),
@@ -8045,6 +8264,7 @@ class $$MatchesTableTableTableManager extends RootTableManager<
             Value<String?> stateJson = const Value.absent(),
             Value<String?> setupDraftJson = const Value.absent(),
             Value<int> createdAt = const Value.absent(),
+            Value<int?> updatedAt = const Value.absent(),
             Value<String?> endReasonCode = const Value.absent(),
             Value<String?> endReasonText = const Value.absent(),
             Value<String?> endNote = const Value.absent(),
@@ -8075,6 +8295,9 @@ class $$MatchesTableTableTableManager extends RootTableManager<
             matchTimeZone: matchTimeZone,
             tossWinnerTeamId: tossWinnerTeamId,
             tossDecision: tossDecision,
+            tossCallingTeamId: tossCallingTeamId,
+            tossCall: tossCall,
+            coinResult: coinResult,
             teamASquadJson: teamASquadJson,
             teamBSquadJson: teamBSquadJson,
             teamACaptainId: teamACaptainId,
@@ -8088,6 +8311,7 @@ class $$MatchesTableTableTableManager extends RootTableManager<
             stateJson: stateJson,
             setupDraftJson: setupDraftJson,
             createdAt: createdAt,
+            updatedAt: updatedAt,
             endReasonCode: endReasonCode,
             endReasonText: endReasonText,
             endNote: endNote,
@@ -8118,6 +8342,9 @@ class $$MatchesTableTableTableManager extends RootTableManager<
             Value<String?> matchTimeZone = const Value.absent(),
             Value<String?> tossWinnerTeamId = const Value.absent(),
             Value<String?> tossDecision = const Value.absent(),
+            Value<String?> tossCallingTeamId = const Value.absent(),
+            Value<String?> tossCall = const Value.absent(),
+            Value<String?> coinResult = const Value.absent(),
             Value<String?> teamASquadJson = const Value.absent(),
             Value<String?> teamBSquadJson = const Value.absent(),
             Value<String?> teamACaptainId = const Value.absent(),
@@ -8131,6 +8358,7 @@ class $$MatchesTableTableTableManager extends RootTableManager<
             Value<String?> stateJson = const Value.absent(),
             Value<String?> setupDraftJson = const Value.absent(),
             required int createdAt,
+            Value<int?> updatedAt = const Value.absent(),
             Value<String?> endReasonCode = const Value.absent(),
             Value<String?> endReasonText = const Value.absent(),
             Value<String?> endNote = const Value.absent(),
@@ -8161,6 +8389,9 @@ class $$MatchesTableTableTableManager extends RootTableManager<
             matchTimeZone: matchTimeZone,
             tossWinnerTeamId: tossWinnerTeamId,
             tossDecision: tossDecision,
+            tossCallingTeamId: tossCallingTeamId,
+            tossCall: tossCall,
+            coinResult: coinResult,
             teamASquadJson: teamASquadJson,
             teamBSquadJson: teamBSquadJson,
             teamACaptainId: teamACaptainId,
@@ -8174,6 +8405,7 @@ class $$MatchesTableTableTableManager extends RootTableManager<
             stateJson: stateJson,
             setupDraftJson: setupDraftJson,
             createdAt: createdAt,
+            updatedAt: updatedAt,
             endReasonCode: endReasonCode,
             endReasonText: endReasonText,
             endNote: endNote,
