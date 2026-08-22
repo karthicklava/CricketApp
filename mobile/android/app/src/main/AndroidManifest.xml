@@ -4,7 +4,8 @@
         android:label="TurfScore"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round">
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:theme="@style/LaunchTheme">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -28,6 +29,7 @@
             android:enabled="true" android:exported="true"
             android:icon="@mipmap/ic_launcher"
             android:roundIcon="@mipmap/ic_launcher_round"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -37,6 +39,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_1"
             android:roundIcon="@mipmap/jersey_1"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -46,6 +49,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_2"
             android:roundIcon="@mipmap/jersey_2"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -55,6 +59,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_3"
             android:roundIcon="@mipmap/jersey_3"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -64,6 +69,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_4"
             android:roundIcon="@mipmap/jersey_4"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -73,6 +79,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_5"
             android:roundIcon="@mipmap/jersey_5"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -82,6 +89,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_6"
             android:roundIcon="@mipmap/jersey_6"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -91,6 +99,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_7"
             android:roundIcon="@mipmap/jersey_7"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -100,6 +109,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_8"
             android:roundIcon="@mipmap/jersey_8"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -109,6 +119,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_9"
             android:roundIcon="@mipmap/jersey_9"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -118,6 +129,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_10"
             android:roundIcon="@mipmap/jersey_10"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -127,6 +139,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_11"
             android:roundIcon="@mipmap/jersey_11"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -136,6 +149,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_12"
             android:roundIcon="@mipmap/jersey_12"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -145,6 +159,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_13"
             android:roundIcon="@mipmap/jersey_13"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -154,6 +169,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_14"
             android:roundIcon="@mipmap/jersey_14"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -163,6 +179,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_15"
             android:roundIcon="@mipmap/jersey_15"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -172,6 +189,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_16"
             android:roundIcon="@mipmap/jersey_16"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -181,6 +199,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_17"
             android:roundIcon="@mipmap/jersey_17"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -190,6 +209,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_18"
             android:roundIcon="@mipmap/jersey_18"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -199,6 +219,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_19"
             android:roundIcon="@mipmap/jersey_19"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -208,6 +229,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_20"
             android:roundIcon="@mipmap/jersey_20"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -217,6 +239,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_21"
             android:roundIcon="@mipmap/jersey_21"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -226,6 +249,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_22"
             android:roundIcon="@mipmap/jersey_22"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -235,6 +259,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_23"
             android:roundIcon="@mipmap/jersey_23"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -244,6 +269,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_24"
             android:roundIcon="@mipmap/jersey_24"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -253,6 +279,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_25"
             android:roundIcon="@mipmap/jersey_25"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -262,6 +289,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_26"
             android:roundIcon="@mipmap/jersey_26"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -271,6 +299,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_27"
             android:roundIcon="@mipmap/jersey_27"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -280,6 +309,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_28"
             android:roundIcon="@mipmap/jersey_28"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -289,6 +319,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_29"
             android:roundIcon="@mipmap/jersey_29"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -298,6 +329,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_30"
             android:roundIcon="@mipmap/jersey_30"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -307,6 +339,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_31"
             android:roundIcon="@mipmap/jersey_31"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -316,6 +349,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_32"
             android:roundIcon="@mipmap/jersey_32"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -325,6 +359,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_33"
             android:roundIcon="@mipmap/jersey_33"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -334,6 +369,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_34"
             android:roundIcon="@mipmap/jersey_34"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -343,6 +379,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_35"
             android:roundIcon="@mipmap/jersey_35"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -352,6 +389,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_36"
             android:roundIcon="@mipmap/jersey_36"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -361,6 +399,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_37"
             android:roundIcon="@mipmap/jersey_37"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -370,6 +409,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_38"
             android:roundIcon="@mipmap/jersey_38"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -379,6 +419,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_39"
             android:roundIcon="@mipmap/jersey_39"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -388,6 +429,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_40"
             android:roundIcon="@mipmap/jersey_40"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -397,6 +439,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_41"
             android:roundIcon="@mipmap/jersey_41"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -406,6 +449,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_42"
             android:roundIcon="@mipmap/jersey_42"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -415,6 +459,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_43"
             android:roundIcon="@mipmap/jersey_43"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -424,6 +469,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_44"
             android:roundIcon="@mipmap/jersey_44"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -433,6 +479,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_45"
             android:roundIcon="@mipmap/jersey_45"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -442,6 +489,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_46"
             android:roundIcon="@mipmap/jersey_46"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -451,6 +499,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_47"
             android:roundIcon="@mipmap/jersey_47"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -460,6 +509,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_48"
             android:roundIcon="@mipmap/jersey_48"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -469,6 +519,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_49"
             android:roundIcon="@mipmap/jersey_49"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -478,6 +529,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_50"
             android:roundIcon="@mipmap/jersey_50"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -487,6 +539,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_51"
             android:roundIcon="@mipmap/jersey_51"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -496,6 +549,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_52"
             android:roundIcon="@mipmap/jersey_52"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -505,6 +559,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_53"
             android:roundIcon="@mipmap/jersey_53"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -514,6 +569,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_54"
             android:roundIcon="@mipmap/jersey_54"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -523,6 +579,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_55"
             android:roundIcon="@mipmap/jersey_55"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -532,6 +589,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_56"
             android:roundIcon="@mipmap/jersey_56"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -541,6 +599,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_57"
             android:roundIcon="@mipmap/jersey_57"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -550,6 +609,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_58"
             android:roundIcon="@mipmap/jersey_58"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -559,6 +619,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_59"
             android:roundIcon="@mipmap/jersey_59"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -568,6 +629,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_60"
             android:roundIcon="@mipmap/jersey_60"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -577,6 +639,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_61"
             android:roundIcon="@mipmap/jersey_61"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -586,6 +649,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_62"
             android:roundIcon="@mipmap/jersey_62"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -595,6 +659,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_63"
             android:roundIcon="@mipmap/jersey_63"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -604,6 +669,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_64"
             android:roundIcon="@mipmap/jersey_64"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -613,6 +679,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_65"
             android:roundIcon="@mipmap/jersey_65"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -622,6 +689,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_66"
             android:roundIcon="@mipmap/jersey_66"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -631,6 +699,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_67"
             android:roundIcon="@mipmap/jersey_67"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -640,6 +709,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_68"
             android:roundIcon="@mipmap/jersey_68"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -649,6 +719,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_69"
             android:roundIcon="@mipmap/jersey_69"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -658,6 +729,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_70"
             android:roundIcon="@mipmap/jersey_70"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -667,6 +739,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_71"
             android:roundIcon="@mipmap/jersey_71"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -676,6 +749,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_72"
             android:roundIcon="@mipmap/jersey_72"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -685,6 +759,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_73"
             android:roundIcon="@mipmap/jersey_73"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -694,6 +769,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_74"
             android:roundIcon="@mipmap/jersey_74"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -703,6 +779,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_75"
             android:roundIcon="@mipmap/jersey_75"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -712,6 +789,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_76"
             android:roundIcon="@mipmap/jersey_76"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -721,6 +799,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_77"
             android:roundIcon="@mipmap/jersey_77"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -730,6 +809,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_78"
             android:roundIcon="@mipmap/jersey_78"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -739,6 +819,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_79"
             android:roundIcon="@mipmap/jersey_79"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -748,6 +829,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_80"
             android:roundIcon="@mipmap/jersey_80"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -757,6 +839,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_81"
             android:roundIcon="@mipmap/jersey_81"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -766,6 +849,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_82"
             android:roundIcon="@mipmap/jersey_82"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -775,6 +859,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_83"
             android:roundIcon="@mipmap/jersey_83"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -784,6 +869,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_84"
             android:roundIcon="@mipmap/jersey_84"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -793,6 +879,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_85"
             android:roundIcon="@mipmap/jersey_85"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -802,6 +889,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_86"
             android:roundIcon="@mipmap/jersey_86"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -811,6 +899,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_87"
             android:roundIcon="@mipmap/jersey_87"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -820,6 +909,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_88"
             android:roundIcon="@mipmap/jersey_88"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -829,6 +919,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_89"
             android:roundIcon="@mipmap/jersey_89"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -838,6 +929,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_90"
             android:roundIcon="@mipmap/jersey_90"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -847,6 +939,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_91"
             android:roundIcon="@mipmap/jersey_91"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -856,6 +949,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_92"
             android:roundIcon="@mipmap/jersey_92"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -865,6 +959,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_93"
             android:roundIcon="@mipmap/jersey_93"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -874,6 +969,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_94"
             android:roundIcon="@mipmap/jersey_94"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -883,6 +979,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_95"
             android:roundIcon="@mipmap/jersey_95"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -892,6 +989,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_96"
             android:roundIcon="@mipmap/jersey_96"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -901,6 +999,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_97"
             android:roundIcon="@mipmap/jersey_97"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -910,6 +1009,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_98"
             android:roundIcon="@mipmap/jersey_98"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -919,6 +1019,7 @@
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_99"
             android:roundIcon="@mipmap/jersey_99"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

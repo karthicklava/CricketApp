@@ -418,6 +418,7 @@ const _defaultAlias = '''
             android:enabled="true" android:exported="true"
             android:icon="@mipmap/ic_launcher"
             android:roundIcon="@mipmap/ic_launcher_round"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -429,6 +430,7 @@ String _androidAlias(String number) => '''
             android:enabled="false" android:exported="true"
             android:icon="@mipmap/jersey_$number"
             android:roundIcon="@mipmap/jersey_$number"
+            android:theme="@style/LaunchTheme"
             android:targetActivity=".MainActivity">
             <intent-filter><action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
