@@ -221,7 +221,9 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
     }
     if (widget.preselectTeamId != null &&
         teams.any((t) => t.id == widget.preselectTeamId)) {
-      _teamA = teams.firstWhere((t) => t.id == widget.preselectTeamId);
+      final preselected =
+          teams.firstWhere((t) => t.id == widget.preselectTeamId);
+      await _selectTeam(preselected, isTeamA: true);
     }
     if (mounted) setState(() {});
   }
@@ -961,7 +963,20 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
       content: FutureBuilder<List<TeamsTableData>>(
         future: ref.read(teamRepositoryProvider).getAllTeams(),
         builder: (context, snapshot) {
-          final teams = snapshot.data ?? [];
+          final rawTeams = snapshot.data ?? [];
+          final uniqueTeamsMap = <String, TeamsTableData>{};
+          for (final t in rawTeams) {
+            uniqueTeamsMap[t.id] = t;
+          }
+          final teams = uniqueTeamsMap.values.toList();
+
+          if (_teamA != null && uniqueTeamsMap.containsKey(_teamA!.id)) {
+            _teamA = uniqueTeamsMap[_teamA!.id];
+          }
+          if (_teamB != null && uniqueTeamsMap.containsKey(_teamB!.id)) {
+            _teamB = uniqueTeamsMap[_teamB!.id];
+          }
+
           if (teams.length < 2) {
             return Card(
               child: Padding(
@@ -1009,15 +1024,30 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
                   ),
                 ],
               ),
-              DropdownButtonFormField<TeamsTableData>(
-                value: _teamA,
+              DropdownButtonFormField<String>(
+                value: (_teamA != null &&
+                        teams.any(
+                            (t) => t.id == _teamA!.id && t.id != _teamB?.id))
+                    ? _teamA!.id
+                    : null,
                 hint: const Text('Choose Team A'),
-                decoration: const InputDecoration(border: OutlineInputBorder()),
+                decoration:
+                    const InputDecoration(border: OutlineInputBorder()),
                 items: teams
                     .where((t) => t.id != _teamB?.id)
-                    .map((t) => DropdownMenuItem(value: t, child: Text(t.name)))
+                    .map((t) => DropdownMenuItem<String>(
+                          value: t.id,
+                          child: Text(t.name),
+                        ))
                     .toList(),
-                onChanged: (val) => _selectTeam(val, isTeamA: true),
+                onChanged: (selectedId) {
+                  if (selectedId == null) {
+                    _selectTeam(null, isTeamA: true);
+                  } else {
+                    final selected = uniqueTeamsMap[selectedId];
+                    _selectTeam(selected, isTeamA: true);
+                  }
+                },
               ),
               if (_teamA != null) ...[
                 const SizedBox(height: 10),
@@ -1041,15 +1071,30 @@ class _MatchSetupWizardState extends ConsumerState<MatchSetupWizard> {
                   ),
                 ],
               ),
-              DropdownButtonFormField<TeamsTableData>(
-                value: _teamB,
+              DropdownButtonFormField<String>(
+                value: (_teamB != null &&
+                        teams.any(
+                            (t) => t.id == _teamB!.id && t.id != _teamA?.id))
+                    ? _teamB!.id
+                    : null,
                 hint: const Text('Choose Team B'),
-                decoration: const InputDecoration(border: OutlineInputBorder()),
+                decoration:
+                    const InputDecoration(border: OutlineInputBorder()),
                 items: teams
                     .where((t) => t.id != _teamA?.id)
-                    .map((t) => DropdownMenuItem(value: t, child: Text(t.name)))
+                    .map((t) => DropdownMenuItem<String>(
+                          value: t.id,
+                          child: Text(t.name),
+                        ))
                     .toList(),
-                onChanged: (val) => _selectTeam(val, isTeamA: false),
+                onChanged: (selectedId) {
+                  if (selectedId == null) {
+                    _selectTeam(null, isTeamA: false);
+                  } else {
+                    final selected = uniqueTeamsMap[selectedId];
+                    _selectTeam(selected, isTeamA: false);
+                  }
+                },
               ),
               if (_teamB != null) ...[
                 const SizedBox(height: 10),
